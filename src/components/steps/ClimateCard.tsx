@@ -168,7 +168,7 @@ export function ClimateCard() {
             {detail.disagreeMonths.length > 0 && <Badge tone="warn">Sources differ &gt; {DISAGREEMENT_PCT} % in {detail.disagreeMonths.map((i) => MONTH_LABELS[i]).join(", ")}: check the entered values</Badge>}
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
             <MonthlyChart title="Design peak sun hours by month" values={monthly} unit="h/day" highlight={worstIdx} reference={{ value: site.peakSunHours, label: `Design ${site.peakSunHours} h` }} />
             <div className="space-y-3 text-sm">
               <p className="text-muted">

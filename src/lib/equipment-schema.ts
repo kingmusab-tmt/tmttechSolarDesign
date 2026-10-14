@@ -3,9 +3,6 @@ import { z } from "zod";
 export const EQUIPMENT_TYPES = ["panel", "inverter", "battery", "controller"] as const;
 export type EquipmentType = (typeof EQUIPMENT_TYPES)[number];
 
-export const DATASHEET_MAX_BYTES = 5 * 1024 * 1024;
-export const DATASHEET_TYPES = ["application/pdf", "image/png", "image/jpeg", "image/webp"];
-
 const httpUrl = z
   .string()
   .trim()
@@ -35,8 +32,6 @@ export interface EquipmentItem {
   builtIn: boolean;
   datasheetUrl: string;
   notes: string;
-  /** Uploaded datasheet file, served from /api/equipment/:id/datasheet. */
-  datasheetFile: { name: string; size: number; contentType: string } | null;
   /** Built-in item whose values were transcribed from the official datasheet. */
   verified: boolean;
   /** Created by the current user (may edit and share directly). */
@@ -47,4 +42,8 @@ export interface EquipmentItem {
   orgName: string;
   source: "seed" | "admin" | "user";
   retired: boolean;
+  /** Your own item: whether an administrator added it to the global library. */
+  libraryStatus?: "added" | "dismissed" | null;
+  /** Library item that came from a user's submission: who contributed it. */
+  contributedByName?: string;
 }

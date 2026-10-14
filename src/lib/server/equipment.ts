@@ -1,5 +1,5 @@
 import "server-only";
-import { isValidObjectId } from "mongoose";
+import mongoose, { isValidObjectId } from "mongoose";
 import { EQUIPMENT_SEED, SEED_VERSION } from "@/lib/equipment-seed";
 import { Equipment, toEquipmentItem, type EquipmentDoc } from "@/models/Equipment";
 import { Organization } from "@/models/Organization";
@@ -16,6 +16,7 @@ declare global {
  */
 export async function ensureSeeded() {
   if (globalThis._equipmentSeeded === SEED_VERSION) return;
+  await removeStoredDatasheetFiles();
   const keys = EQUIPMENT_SEED.map((e) => e.seedKey);
   await Equipment.deleteMany({
     owner: null,
@@ -37,12 +38,19 @@ export async function visibleEquipmentFilter(userId: string) {
   return { retired: { $ne: true }, $or: [{ owner: null }, { owner: userId }, { org: { $in: orgIds } }] };
 }
 
-export async function withNames(items: EquipmentDoc[], userId: string) {
-  const names = await userNames(items.map((i) => i.owner));
+/** `admin`: also name the user each library item was contributed by (not shown to other users). */
+export async function withNames(items: EquipmentDoc[], userId: string, opts: { admin?: boolean } = {}) {
+  const names = await userNames([...items.map((i) => i.owner), ...(opts.admin ? items.map((i) => i.contributedBy ?? null) : [])]);
   const orgIds = [...new Set(items.map((i) => i.org).filter(Boolean).map(String))];
   const orgs = orgIds.length ? await Organization.find({ _id: { $in: orgIds } }, { name: 1 }).lean() : [];
   const orgNames = Object.fromEntries(orgs.map((o) => [String(o._id), o.name]));
-  return items.map((i) => toEquipmentItem(i, { userId, names, orgNames }));
+  return items.map((i) => toEquipmentItem(i, { userId, names, orgNames, admin: opts.admin }));
+}
+
+/** Identity used to spot the same product in the global library (type + brand + model, case-insensitive). */
+export function libraryKey(i: Pick<EquipmentDoc, "type" | "brand" | "model">) {
+  const norm = (s: string) => (s ?? "").toLowerCase().replace(/\s+/g, " ").trim();
+  return `${i.type}|${norm(i.brand)}|${norm(i.model)}`;
 }
 
 /** Load an equipment item the user can see, with what they may do with it. */
@@ -52,4 +60,16 @@ export async function equipmentAccess(userId: string, id: string) {
   if (!item) throw new HttpError(404, "Equipment not found");
   const mine = item.owner !== null && String(item.owner) === userId;
   return { item, mine, sharedWithMe: !mine && item.owner !== null && Boolean(item.org) };
+}
+
+/**
+ * Datasheet file uploads were removed (they consumed database storage). Free any space used by
+ * files uploaded earlier: drop their collection and the file references. Runs once per process.
+ */
+async function removeStoredDatasheetFiles() {
+  const db = mongoose.connection.db;
+  if (!db) return;
+  const [coll] = await db.listCollections({ name: "equipmentdatasheets" }).toArray();
+  if (coll) await db.dropCollection("equipmentdatasheets");
+  await Equipment.collection.updateMany({ datasheetFile: { $exists: true } }, { $unset: { datasheetFile: "" } });
 }

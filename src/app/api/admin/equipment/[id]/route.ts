@@ -21,9 +21,13 @@ export const PATCH = handler<Ctx>(async (req, ctx, session) => {
   await requireAdmin(session);
   const { id } = await ctx.params;
   const item = await builtIn(id);
-  const parsed = Patch.safeParse(await readJson(req));
+  const raw = await readJson<Record<string, unknown>>(req);
+  const parsed = Patch.safeParse(raw);
   if (!parsed.success) throw new HttpError(400, parsed.error.issues[0]?.message ?? "Invalid update");
-  const { type: _ignored, ...set } = parsed.data;
+  // Only change fields actually sent: .partial() still fills schema defaults ("" / {}) for missing
+  // keys, which would otherwise wipe brand, specs and notes when e.g. just restoring an item.
+  const set = Object.fromEntries(Object.entries(parsed.data).filter(([k]) => k !== "type" && k in raw));
+  if (!Object.keys(set).length) throw new HttpError(400, "Nothing to update");
   await Equipment.updateOne({ _id: item._id }, { $set: { ...set, adminEdited: true } });
   return json({ ok: true });
 });

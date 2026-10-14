@@ -12,7 +12,7 @@ export const GET = handler(async (req, _ctx, session) => {
   const filter: Record<string, unknown> = { owner: null };
   if (type) filter.type = type;
   const items = await Equipment.find(filter).sort({ retired: 1, verified: -1, brand: 1, model: 1 }).lean<EquipmentDoc[]>();
-  return json({ items: await withNames(items, session.userId) });
+  return json({ items: await withNames(items, session.userId, { admin: true }) });
 });
 
 /** Add a new item to the shared library: visible to every user immediately. */

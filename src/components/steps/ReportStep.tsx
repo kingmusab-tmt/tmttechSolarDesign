@@ -1,5 +1,6 @@
 "use client";
 
+import { APP_NAME, COMPANY } from "@/lib/brand";
 import { CHEMISTRY_INFO } from "@/lib/calc/constants";
 import { COMPLIANCE_ITEMS } from "@/lib/compliance";
 import { fmt, money } from "@/lib/format";
@@ -24,6 +25,7 @@ function Section({ n, title, children, breakBefore }: { n: number; title: string
 
 function T({ rows, head }: { rows: (string | number)[][]; head?: string[] }) {
   return (
+    <div className="overflow-x-auto">
     <table className="w-full border-collapse text-sm">
       {head && (
         <thead>
@@ -48,6 +50,7 @@ function T({ rows, head }: { rows: (string | number)[][]; head?: string[] }) {
         ))}
       </tbody>
     </table>
+    </div>
   );
 }
 
@@ -273,6 +276,13 @@ export function ReportStep() {
         </section>
         <p className="text-[11px] text-muted">
           Indicative design based on user inputs and typical datasheet and climate values. Verify against manufacturer datasheets, measured site data and applicable standards before construction.
+        </p>
+        <p className="text-[11px] text-muted">
+          Climate data: {p.site.climateSource}. NASA POWER data were obtained from the NASA Langley Research Center (LaRC) POWER Project funded through the NASA Earth Science/Applied Science Program. Global Solar Atlas 2.0 is operated by Solargis s.r.o. on
+          behalf of the World Bank Group with funding from ESMAP (CC BY 4.0). PV module data from the California Energy Commission list via NREL System Advisor Model (BSD 3-Clause). Product names belong to their respective owners.
+        </p>
+        <p className="text-[11px] text-muted">
+          Prepared with {APP_NAME} by {COMPANY.name} ({COMPANY.websiteLabel}).
         </p>
       </article>
     </div>

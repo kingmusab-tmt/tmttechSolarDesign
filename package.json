@@ -11,7 +11,8 @@
     "db:memory": "node scripts/dev-mongo.mjs",
     "test:e2e": "node scripts/smoke.mjs",
     "data:cec": "node scripts/build-cec-modules.mjs",
-    "test:collab": "node scripts/collab-e2e.mjs"
+    "test:collab": "node scripts/collab-e2e.mjs",
+    "start:test": "node scripts/start-test-server.mjs"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

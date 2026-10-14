@@ -1,15 +1,27 @@
 // Multi-user end-to-end test for admin, organisations, approvals, locks and concurrency.
 // Start the server with ADMIN_EMAILS including admin@e2e.test, then: npm run test:collab
-const B = process.env.BASE_URL || "http://localhost:3000";
+const B = process.env.BASE_URL || "http://localhost:3100";
 const RUN = Date.now();
 let failures = 0;
 
+// Safety: refuse to write test data unless this is the local test server (see start-test-server.mjs).
+{
+  const g = await fetch(`${B}/api/test-guard`).then((r) => r.json()).catch(() => ({}));
+  if (!g.testServer) {
+    console.error("Refusing to run: start the server with `npm run start:test` so tests use a local test database, not your real one.");
+    process.exit(2);
+  }
+}
+
 function client(label) {
-  let cookie = "";
+  const jar = new Map(); // cookie name -> "name=value" (session and visitor id)
   const req = async (method, path, body) => {
+    const cookie = [...jar.values()].join("; ");
     const res = await fetch(B + path, { method, headers: { "Content-Type": "application/json", cookie }, body: body ? JSON.stringify(body) : undefined, redirect: "manual" });
-    const sc = res.headers.get("set-cookie");
-    if (sc) cookie = sc.split(";")[0];
+    for (const sc of res.headers.getSetCookie()) {
+      const pair = sc.split(";")[0];
+      jar.set(pair.split("=")[0], pair);
+    }
     const data = await res.json().catch(() => ({}));
     return { status: res.status, data };
   };
@@ -47,6 +59,8 @@ ok((await admin.req("DELETE", `/api/admin/equipment/${libId}`)).status === 200, 
 lib = (await ada.req("GET", "/api/equipment?type=battery")).data.items;
 ok(!lib.some((i) => i._id === libId), "retired items disappear for users");
 ok((await admin.req("PATCH", `/api/admin/equipment/${libId}`, { retired: false })).status === 200, "admin restores it");
+const restored = (await ada.req("GET", "/api/equipment?type=battery")).data.items.find((i) => i._id === libId);
+ok(restored?.brand === "E2E" && restored.specs.unitAh === 280 && restored.datasheetUrl === "https://example.com/ds.pdf", "restoring keeps the item's brand, specs and datasheet link");
 const users = (await admin.req("GET", "/api/admin/users")).data.users;
 const adaId = users.find((u) => u.email === `ada${RUN}@e2e.test`)._id;
 ok((await admin.req("PATCH", `/api/admin/users/${adaId}`, { role: "admin" })).status === 200 && (await ada.req("GET", "/api/admin/stats")).status === 200, "admin promotes a user, who gains admin access");
@@ -139,6 +153,47 @@ res = await bob.req("POST", `/api/equipment/${eid}/changes`, { value: { type: "p
 ok(res.status === 201, "Bob suggests a correction with a comment");
 res = await ada.req("POST", `/api/changes/${res.data.change._id}`, { action: "approve" });
 ok(res.status === 200 && (await bob.req("GET", "/api/equipment?type=panel")).data.items.find((i) => i._id === eid).specs.pmaxW === 455, "Ada approves; the shared item is updated for everyone");
+
+/* ---------------- Visitors ---------------- */
+ok((await carol.req("POST", "/api/visit")).status === 204 && (await ada.req("POST", "/api/visit")).status === 204, "page views are recorded for visitors and signed-in users");
+ok((await ada.req("GET", "/api/admin/analytics")).status === 403, "regular users cannot see visitor figures");
+res = await admin.req("GET", "/api/admin/analytics?days=30");
+const today = res.data.series?.at(-1);
+ok(res.status === 200 && res.data.today.visitors >= 2 && res.data.today.users >= 1 && today?.visitors >= 2 && res.data.series.length === 30, "admin sees today's visitors, signed-in users and a 30-day series");
+ok((await admin.req("GET", "/api/admin/users")).data.users.find((u) => u.email === `ada${RUN}@e2e.test`)?.lastSeen, "admin sees when each user was last active");
+
+/* ---------------- User equipment → global library ---------------- */
+ok((await ada.req("GET", "/api/admin/submissions")).status === 403, "regular users cannot open the review queue");
+let subs = (await admin.req("GET", "/api/admin/submissions?status=pending&type=panel")).data;
+ok(subs.items.some((i) => i._id === eid && i.ownerName === "Ada Lovelace" && i.match === null), "admin sees Ada's module in the review queue, marked as a new model");
+res = await admin.req("POST", `/api/admin/submissions/${eid}`, { action: "add", item: { brand: "Ada Co", model: `AC-${RUN}`, specs: { pmaxW: 460 }, verified: true, datasheetUrl: "https://example.com/ac.pdf", notes: "Checked" } });
+ok(res.status === 200, "admin corrects a value and adds the module to the global library");
+const globalId = res.data.libraryItem;
+let carolPanels = (await carol.req("GET", "/api/equipment?type=panel")).data.items;
+const promoted = carolPanels.find((i) => i._id === globalId);
+ok(promoted?.builtIn && promoted.verified && promoted.specs.pmaxW === 460 && !promoted.contributedByName, "every user now sees it as a verified library item (contributor not revealed)");
+const adaOwn = (await ada.req("GET", "/api/equipment?type=panel")).data.items.find((i) => i._id === eid);
+ok(adaOwn?.specs.pmaxW === 455 && adaOwn.libraryStatus === "added", "Ada's own copy is unchanged and shows it was added to the library");
+ok((await admin.req("GET", "/api/admin/equipment?type=panel")).data.items.find((i) => i._id === globalId)?.contributedByName === "Ada Lovelace", "admin library view credits the contributor");
+
+r = await ada.req("POST", "/api/equipment", { type: "panel", brand: "ada co", model: `ac-${RUN}`, specs: { pmaxW: 470 } });
+const dupId = r.data.item._id;
+subs = (await admin.req("GET", "/api/admin/submissions?status=pending&type=panel")).data;
+ok(subs.items.find((i) => i._id === dupId)?.match?._id === globalId, "a submission of a model already in the library is flagged with the match");
+res = await admin.req("POST", `/api/admin/submissions/${dupId}`, { action: "add", item: { brand: "ada co", model: `ac-${RUN}`, specs: { pmaxW: 470 } } });
+ok(res.status === 409 && res.data.code === "duplicate" && res.data.matchId === globalId, "adding a duplicate as new is refused with the matching item");
+res = await admin.req("POST", `/api/admin/submissions/${dupId}`, { action: "add", targetId: globalId, item: { brand: "Ada Co", model: `AC-${RUN}`, specs: { pmaxW: 470 }, verified: true, datasheetUrl: "https://example.com/ac.pdf" } });
+carolPanels = (await carol.req("GET", "/api/equipment?type=panel")).data.items;
+ok(res.status === 200 && carolPanels.find((i) => i._id === globalId)?.specs.pmaxW === 470 && carolPanels.filter((i) => i.model.toLowerCase() === `ac-${RUN}`).length === 1, "admin updates the existing library item instead of duplicating it");
+
+r = await ada.req("POST", "/api/equipment", { type: "controller", brand: "Ada Co", model: `CC-${RUN}`, specs: { ratedCurrentA: 60 } });
+const ccId = r.data.item._id;
+ok((await admin.req("POST", `/api/admin/submissions/${ccId}`, { action: "dismiss", comment: "Missing datasheet" })).status === 200, "admin dismisses an item with a note");
+subs = (await admin.req("GET", "/api/admin/submissions?status=dismissed")).data;
+ok(subs.items.find((i) => i._id === ccId)?.review?.comment === "Missing datasheet" && !(await carol.req("GET", "/api/equipment?type=controller")).data.items.some((i) => i.model === `CC-${RUN}`), "dismissed items stay private");
+await ada.req("PATCH", `/api/equipment/${ccId}`, { type: "controller", brand: "Ada Co", model: `CC-${RUN}`, specs: { ratedCurrentA: 60 }, datasheetUrl: "https://example.com/cc.pdf" });
+ok((await admin.req("GET", "/api/admin/submissions?status=pending")).data.items.some((i) => i._id === ccId), "when the user edits a dismissed item it returns to the queue");
+ok(typeof (await admin.req("GET", "/api/admin/stats")).data.submissions === "number", "the overview counts equipment waiting for review");
 
 /* ---------------- Unshare ---------------- */
 ok((await bob.req("POST", `/api/projects/${pid}/share`, { orgId: null })).status === 403, "only the owner can change sharing");

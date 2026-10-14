@@ -1,8 +1,17 @@
 // End-to-end smoke test against a running server.
 // Usage: npm run db:memory  (terminal 1) · npm run build && npm start (terminal 2) · npm run test:e2e
-const B = process.env.BASE_URL || "http://localhost:3000";
+const B = process.env.BASE_URL || "http://localhost:3100";
 let cookie = "";
 let failures = 0;
+
+// Safety: refuse to write test data unless this is the local test server (see start-test-server.mjs).
+{
+  const g = await fetch(`${B}/api/test-guard`).then((r) => r.json()).catch(() => ({}));
+  if (!g.testServer) {
+    console.error("Refusing to run: start the server with `npm run start:test` so tests use a local test database, not your real one.");
+    process.exit(2);
+  }
+}
 
 async function call(method, path, body, headers = {}) {
   const res = await fetch(B + path, { method, headers: { "Content-Type": "application/json", cookie, ...headers }, body: body ? JSON.stringify(body) : undefined, redirect: "manual" });
@@ -69,7 +78,7 @@ r = await call("POST", "/api/equipment", { type: "panel", brand: "Acme", model: 
 ok(r.status === 201, "add own equipment");
 ok((await call("DELETE", `/api/equipment/${r.data.item._id}`)).status === 200, "delete own equipment");
 
-// Real datasheets: CEC module database + uploaded originals
+// Real datasheets: CEC module database + manufacturer links
 r = await call("GET", "/api/equipment/cec?q=jinko%20JKM505N-72HL4-TV");
 ok(r.status === 200 && r.data.items[0]?.specs.vocV === 49.51, `CEC search (${r.data.total} match, βVoc ${r.data.items?.[0]?.specs.betaVocPct} %/°C)`);
 ok((await call("GET", "/api/equipment/cec?q=a")).status === 400, "CEC search needs a real query");
@@ -78,23 +87,8 @@ r = await call("POST", "/api/equipment", { type: "panel", brand: cecModule.manuf
 ok(r.status === 201 && r.data.item.datasheetUrl.startsWith("https://"), "save CEC module with datasheet link");
 const eqId = r.data.item._id;
 ok((await call("PATCH", `/api/equipment/${eqId}`, { type: "panel", model: "X", datasheetUrl: "javascript:alert(1)" })).status === 400, "non-http datasheet links rejected");
-const upload = async (bytes, type, name) => {
-  const fd = new FormData();
-  fd.append("file", new Blob([bytes], { type }), name);
-  const res = await fetch(`${B}/api/equipment/${eqId}/datasheet`, { method: "POST", headers: { cookie }, body: fd });
-  return res.status;
-};
-const pdf = new TextEncoder().encode("%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n");
-ok((await upload(pdf, "application/pdf", "JKM505N datasheet.pdf")) === 201, "upload PDF datasheet");
-ok((await upload(new TextEncoder().encode("<html>not a pdf</html>"), "application/pdf", "fake.pdf")) === 415, "fake PDF rejected");
-ok((await upload(new TextEncoder().encode("hello"), "text/plain", "notes.txt")) === 415, "non-datasheet file type rejected");
-let dl = await fetch(`${B}/api/equipment/${eqId}/datasheet`, { headers: { cookie } });
-const dlBytes = new Uint8Array(await dl.arrayBuffer());
-ok(dl.status === 200 && dl.headers.get("content-type") === "application/pdf" && dlBytes.length === pdf.length, "download datasheet returns the same file");
-ok((await call("GET", "/api/equipment?type=panel")).data.items.find((i) => i._id === eqId)?.datasheetFile?.name === "JKM505N datasheet.pdf", "library lists the attached datasheet");
-ok((await call("DELETE", `/api/equipment/${eqId}`)).status === 200, "delete equipment with datasheet");
-dl = await fetch(`${B}/api/equipment/${eqId}/datasheet`, { headers: { cookie } });
-ok(dl.status === 404, "datasheet removed with its equipment");
+ok((await fetch(`${B}/api/equipment/${eqId}/datasheet`, { method: "POST", headers: { cookie } })).status === 404, "file uploads are disabled (no paid storage used)");
+ok((await call("DELETE", `/api/equipment/${eqId}`)).status === 200, "delete equipment");
 
 // Account
 ok((await call("PATCH", "/api/account", { name: "Smoke Renamed", company: "Acme Solar" })).status === 200, "update profile");

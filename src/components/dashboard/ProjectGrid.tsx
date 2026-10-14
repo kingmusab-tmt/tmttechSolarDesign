@@ -32,8 +32,8 @@ export function ProjectGrid({ projects }: { projects: ProjectSummary[] }) {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2">
-        <input className="input min-w-0 flex-1" type="search" placeholder="Search by project, client or city…" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search projects" />
-        <select className="input w-auto" value={status} onChange={(e) => setStatus(e.target.value)} aria-label="Filter by status">
+        <input className="input min-w-0 basis-full sm:basis-auto sm:flex-1" type="search" placeholder="Search by project, client or city…" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search projects" />
+        <select className="input min-w-0 flex-1 sm:w-auto sm:flex-none" value={status} onChange={(e) => setStatus(e.target.value)} aria-label="Filter by status">
           <option value="all">All statuses</option>
           {PROJECT_STATUSES.map((s) => (
             <option key={s} value={s}>
@@ -41,7 +41,7 @@ export function ProjectGrid({ projects }: { projects: ProjectSummary[] }) {
             </option>
           ))}
         </select>
-        <select className="input w-auto" value={sort} onChange={(e) => setSort(e.target.value as Sort)} aria-label="Sort projects">
+        <select className="input min-w-0 flex-1 sm:w-auto sm:flex-none" value={sort} onChange={(e) => setSort(e.target.value as Sort)} aria-label="Sort projects">
           <option value="updated">Recently updated</option>
           <option value="name">Name</option>
           <option value="progress">Progress</option>
@@ -52,10 +52,10 @@ export function ProjectGrid({ projects }: { projects: ProjectSummary[] }) {
       {shown.length === 0 ? (
         <p className="card p-8 text-center text-sm text-muted">No projects match these filters.</p>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {shown.map((p) => (
 
-                <article key={p._id} className="card flex flex-col p-5">
+                <article key={p._id} className="card flex min-w-0 flex-col p-4 sm:p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <Link href={`/projects/${p._id}`} className="block truncate font-semibold hover:text-accent-strong">
@@ -102,7 +102,7 @@ export function ProjectGrid({ projects }: { projects: ProjectSummary[] }) {
                     ))}
                   </dl>
 
-                  <div className="mt-4 flex items-center justify-between gap-2">
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
                     {p.issues > 0 ? <span className="text-xs font-medium text-bad">✕ {p.issues} design issue{p.issues > 1 ? "s" : ""}</span> : <span className="text-xs text-muted">{p.dailyKWh > 0 ? "No blocking issues" : "Start with the load audit"}</span>}
                     <ProjectActions id={p._id} name={p.name} canDelete={p.isOwner} />
                   </div>

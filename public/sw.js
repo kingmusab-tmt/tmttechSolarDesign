@@ -1,8 +1,8 @@
-/* SolarDesign Pro service worker: offline app shell. */
-const VERSION = "v2";
+/* TmtechSolar Pro service worker: offline app shell. */
+const VERSION = "v5";
 const STATIC_CACHE = `shs-static-${VERSION}`;
 const PAGE_CACHE = `shs-pages-${VERSION}`;
-const PRECACHE = ["/offline", "/calculator", "/icon.svg", "/pwa-icon/192", "/pwa-icon/512", "/manifest.webmanifest"];
+const PRECACHE = ["/offline", "/calculator", "/icon.svg", "/pwa-icon/192", "/pwa-icon/512", "/pwa-icon/maskable-192", "/pwa-icon/maskable-512", "/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

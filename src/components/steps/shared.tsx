@@ -73,7 +73,7 @@ export function EquipmentPicker({ type, onApply, label = "Load from equipment li
       </button>
       {(() => {
         const item = items.find((i) => i._id === sel);
-        const href = item?.datasheetFile ? `/api/equipment/${item._id}/datasheet` : item?.datasheetUrl;
+        const href = item?.datasheetUrl;
         return href ? (
           <a className="btn" href={href} target="_blank" rel="noopener noreferrer" title="Open the original datasheet">
             Datasheet ↗

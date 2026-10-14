@@ -7,14 +7,14 @@
   --line: #e2e5ea;
   --text: #14181f;
   --muted: #5b6472;
-  --accent: #d97706;
-  --accent-strong: #b45309;
-  --accent-soft: #fef3c7;
+  --accent: #15803d;
+  --accent-strong: #166534;
+  --accent-soft: #dcfce7;
   --brand: #1d4ed8;
   --good: #15803d;
   --good-soft: #dcfce7;
-  --warn: #b45309;
-  --warn-soft: #fef3c7;
+  --warn: #c2410c;
+  --warn-soft: #ffedd5;
   --bad: #b91c1c;
   --bad-soft: #fee2e2;
   --info: #1d4ed8;
@@ -26,6 +26,33 @@
   color-scheme: light;
 }
 
+/* Dark tokens: used when the visitor picks dark with the toggle, or (with no choice saved) when the OS is dark. */
+:root[data-theme="dark"] {
+  --bg: #0f1216;
+  --surface: #171b21;
+  --surface-2: #1f242c;
+  --line: #2b313b;
+  --text: #eef0f3;
+  --muted: #a3abb8;
+  --accent: #16a34a;
+  --accent-strong: #4ade80;
+  --accent-soft: #12301d;
+  --brand: #60a5fa;
+  --good: #4ade80;
+  --good-soft: #12301d;
+  --warn: #fb923c;
+  --warn-soft: #3b1d0c;
+  --bad: #f87171;
+  --bad-soft: #3b1515;
+  --info: #60a5fa;
+  --info-soft: #172a46;
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --grid: #2b313b;
+  color-scheme: dark;
+}
+
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #0f1216;
@@ -34,14 +61,14 @@
     --line: #2b313b;
     --text: #eef0f3;
     --muted: #a3abb8;
-    --accent: #f59e0b;
-    --accent-strong: #fbbf24;
-    --accent-soft: #3a2a0c;
+    --accent: #16a34a;
+    --accent-strong: #4ade80;
+    --accent-soft: #12301d;
     --brand: #60a5fa;
     --good: #4ade80;
     --good-soft: #12301d;
-    --warn: #fbbf24;
-    --warn-soft: #3a2a0c;
+    --warn: #fb923c;
+    --warn-soft: #3b1d0c;
     --bad: #f87171;
     --bad-soft: #3b1515;
     --info: #60a5fa;
@@ -88,7 +115,7 @@ body {
     @apply inline-flex items-center justify-center gap-2 rounded-lg border border-line bg-surface px-3.5 py-2 text-sm font-medium text-text transition hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-50;
   }
   .btn-primary {
-    @apply border-transparent bg-accent text-white hover:bg-accent-strong;
+    @apply border-transparent bg-accent text-white hover:bg-accent hover:brightness-90;
   }
   .btn-danger {
     @apply border-transparent bg-bad text-white hover:opacity-90;

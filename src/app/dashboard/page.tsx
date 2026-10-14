@@ -57,8 +57,8 @@ export default async function Dashboard() {
         ))}
       </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_340px]">
-        <section>
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <section className="min-w-0">
           {projects.length === 0 && !dbError ? (
             <div className="card flex flex-col items-center justify-center p-12 text-center">
               <div className="text-4xl">☀️</div>

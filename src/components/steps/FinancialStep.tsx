@@ -41,7 +41,7 @@ export function FinancialStep() {
         <Stat label="CO₂ avoided" value={fmt(F.co2AvoidedTonnesPerYear, 1)} unit="t/year" hint="Against generator supply (≈ 0.8 kg/kWh)" />
       </div>
 
-      <div className="grid items-start gap-6 xl:grid-cols-[1fr_380px]">
+      <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
         <Card title="Cumulative cash position" subtitle="Initial investment recovered by avoided grid and generator costs, net of O&M and replacements">
           <CashFlowChart flows={F.flows} capex={F.capex} currency={cur} />
         </Card>

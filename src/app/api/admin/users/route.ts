@@ -3,14 +3,17 @@ import { handler, json } from "@/lib/server/api";
 import { Organization } from "@/models/Organization";
 import { Project } from "@/models/Project";
 import { User } from "@/models/User";
+import { Visit } from "@/models/Visit";
 
 export const GET = handler(async (_req, _ctx, session) => {
   await requireAdmin(session);
   const users = await User.find({}, { passwordHash: 0 }).sort({ createdAt: -1 }).limit(1000).lean();
-  const [projectCounts, orgs] = await Promise.all([
+  const [projectCounts, orgs, seen] = await Promise.all([
     Project.aggregate<{ _id: unknown; n: number }>([{ $group: { _id: "$owner", n: { $sum: 1 } } }]),
     Organization.find({}, { members: 1 }).lean(),
+    Visit.aggregate<{ _id: unknown; at: Date }>([{ $match: { user: { $ne: null } } }, { $group: { _id: "$user", at: { $max: "$lastAt" } } }]),
   ]);
+  const lastSeen = new Map(seen.map((s) => [String(s._id), new Date(s.at).toISOString()]));
   const pc = new Map(projectCounts.map((p) => [String(p._id), p.n]));
   const oc = new Map<string, number>();
   for (const o of orgs) for (const m of o.members) oc.set(String(m.user), (oc.get(String(m.user)) ?? 0) + 1);
@@ -24,6 +27,7 @@ export const GET = handler(async (_req, _ctx, session) => {
       createdAt: new Date(u.createdAt).toISOString(),
       projects: pc.get(String(u._id)) ?? 0,
       orgs: oc.get(String(u._id)) ?? 0,
+      lastSeen: lastSeen.get(String(u._id)) ?? null,
       isMe: String(u._id) === session.userId,
     })),
   });

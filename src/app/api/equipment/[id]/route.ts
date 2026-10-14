@@ -3,7 +3,6 @@ import { HttpError, handler, json, readJson } from "@/lib/server/api";
 import { equipmentAccess } from "@/lib/server/equipment";
 import { ChangeRequest } from "@/models/ChangeRequest";
 import { Equipment } from "@/models/Equipment";
-import { EquipmentDatasheet } from "@/models/EquipmentDatasheet";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -17,7 +16,9 @@ export const PATCH = handler<Ctx>(async (req, ctx, session) => {
   }
   const parsed = EquipmentBody.safeParse(await readJson(req));
   if (!parsed.success) throw new HttpError(400, parsed.error.issues[0]?.message.startsWith("Datasheet") ? parsed.error.issues[0].message : "Invalid equipment");
-  await Equipment.updateOne({ _id: item._id }, { $set: { ...parsed.data, type: item.type } });
+  // An edited item that an admin dismissed goes back into the review queue.
+  const reopen = item.review?.status === "dismissed" ? { $unset: { review: "" } } : {};
+  await Equipment.updateOne({ _id: item._id }, { $set: { ...parsed.data, type: item.type }, ...reopen });
   return json({ ok: true });
 });
 
@@ -26,9 +27,6 @@ export const DELETE = handler<Ctx>(async (_req, ctx, session) => {
   const { item, mine } = await equipmentAccess(session.userId, id);
   if (!mine) throw new HttpError(403, "Only the creator can delete this item");
   await Equipment.deleteOne({ _id: item._id });
-  await Promise.all([
-    EquipmentDatasheet.deleteOne({ equipment: item._id }),
-    ChangeRequest.updateMany({ equipment: item._id, status: "pending" }, { $set: { status: "withdrawn", reviewComment: "Item was deleted" } }),
-  ]);
+  await ChangeRequest.updateMany({ equipment: item._id, status: "pending" }, { $set: { status: "withdrawn", reviewComment: "Item was deleted" } });
   return json({ ok: true });
 });
