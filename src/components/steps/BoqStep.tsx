@@ -3,6 +3,7 @@
 import { fmt, money } from "@/lib/format";
 import { Card, Field, NumInput, Stat } from "../ui";
 import { useProject } from "../project/ProjectProvider";
+import { BoqPrintSheet, printBoq } from "./BoqPrint";
 import { downloadText, slug, useSection } from "./shared";
 
 export function BoqStep() {
@@ -34,6 +35,7 @@ export function BoqStep() {
 
   return (
     <div className="space-y-6">
+      <BoqPrintSheet project={project} boq={B} />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="Grand total (incl. VAT)" value={money(B.grandTotal, cur)} tone="accent" />
         <Stat label="Cost per watt-peak" value={money(B.costPerWp, cur)} unit="/Wp" />
@@ -49,8 +51,11 @@ export function BoqStep() {
             <button className="btn btn-sm" onClick={() => setBoq({ extras: [...boq.extras, { id: Math.random().toString(36).slice(2, 10), category: "Other", description: "Additional item", unit: "pcs", qty: 1, unitPrice: 0 }] })}>
               + Custom item
             </button>
-            <button className="btn btn-primary btn-sm" onClick={exportCsv}>
+            <button className="btn btn-sm" onClick={exportCsv}>
               Export CSV
+            </button>
+            <button className="btn btn-primary btn-sm" onClick={() => printBoq(project.name)} title="Opens the print dialog: choose “Save as PDF”">
+              Export PDF
             </button>
           </>
         }

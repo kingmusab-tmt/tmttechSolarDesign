@@ -5,6 +5,8 @@ import { CHEMISTRY_INFO } from "@/lib/calc/constants";
 import { COMPLIANCE_ITEMS } from "@/lib/compliance";
 import { fmt, money } from "@/lib/format";
 import { STEPS } from "@/lib/steps";
+import { resolveMount } from "@/lib/calc/site";
+import { Array3dSvg } from "../diagrams/Array3dSvg";
 import { ArrayLayoutSvg } from "../diagrams/ArrayLayoutSvg";
 import { SldDiagram, SldStyleSwitch, useSldStyle } from "../diagrams/SldDiagram";
 import { StatusIcon } from "../ui";
@@ -211,7 +213,10 @@ export function ReportStep() {
         </Section>
 
         <Section n={7} title="Array layout & structure">
-          <ArrayLayoutSvg layout={r.layout} assessment={p.assessment} settings={p.layout} />
+          <Array3dSvg layout={r.layout} assessment={p.assessment} settings={p.layout} mount={resolveMount(p.assessment, p.layout)} tiltDeg={r.site.recommendedTiltDeg} minSunAltitudeDeg={r.site.minNoonAltitudeDeg} azimuthDeg={r.site.recommendedAzimuthDeg} />
+          <div className="mt-4">
+            <ArrayLayoutSvg layout={r.layout} assessment={p.assessment} settings={p.layout} title="PV array top view" />
+          </div>
           <p className="mt-2 text-sm">
             Dead load {fmt(r.site.deadLoadKgM2, 1)} kg/m² (total {fmt(r.site.arrayWeightKg)} kg) against an allowable {p.assessment.roofAllowableLoadKgM2} kg/m². Mounting: {r.layout.railPieces} rails, {r.layout.midClamps} mid clamps, {r.layout.endClamps} end clamps,{" "}
             {r.layout.roofAttachments} roof attachments.

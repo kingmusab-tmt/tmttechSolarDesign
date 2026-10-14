@@ -119,7 +119,20 @@ export interface SiteResult {
   checks: Check[];
 }
 
-export function computeSite(site: Site, assess: Assessment, layout: LayoutResult, panel: PanelSpec, totalPanels: number, acBreakerA: number): SiteResult {
+export type MountType = "flat" | "ground" | "gable" | "shed";
+
+/** The mounting actually used: the engineer's choice, or one inferred from the site assessment. */
+export function resolveMount(assess: Assessment, layout: Pick<LayoutSettings, "mountType">): MountType {
+  if (layout.mountType && layout.mountType !== "auto") return layout.mountType;
+  if (assess.roofType === "ground") return "ground";
+  return assess.roofPitchDeg < 5 ? "flat" : "gable";
+}
+
+/** Flat roofs and ground mounts use tilted racks facing the equator, independent of the roof plane. */
+export const isRacked = (m: MountType) => m === "flat" || m === "ground";
+
+export function computeSite(site: Site, assess: Assessment, layout: LayoutResult, panel: PanelSpec, totalPanels: number, acBreakerA: number, mount: MountType = resolveMount(assess, { mountType: "auto" })): SiteResult {
+  const racked = isRacked(mount);
   const lat = site.latitude;
   const recommendedTiltDeg = Math.max(10, Math.round(Math.abs(lat)));
   const recommendedAzimuthDeg = lat >= 0 ? 180 : 0; // face the equator
@@ -145,8 +158,8 @@ export function computeSite(site: Site, assess: Assessment, layout: LayoutResult
   const checks: Check[] = [
     check("site", "site-psh", "Peak sun hours defined", site.peakSunHours > 0, `${site.peakSunHours} kWh/m²/day at ${site.city || "site"}`),
     check("site", "site-temps", "Design temperatures defined", site.tMax > site.tMin, `Record low ${site.tMin} °C, record high ${site.tMax} °C`),
-    check("assessment", "as-orientation", "Roof faces the equator (±45°)", dev <= 45 || assess.roofType === "ground", `Roof azimuth ${assess.roofAzimuthDeg}° vs ideal ${recommendedAzimuthDeg}° (deviation ${round(dev, 0)}°)`, "warn"),
-    check("assessment", "as-tilt", "Tilt allows self-cleaning (≥ 10°)", assess.roofPitchDeg >= 10 || assess.roofType === "ground", `Roof pitch ${assess.roofPitchDeg}° (recommended ≈ ${recommendedTiltDeg}°); flatter roofs need tilt frames`, "warn"),
+    check("assessment", "as-orientation", "Roof faces the equator (±45°)", dev <= 45 || assess.roofType === "ground" || racked, `Roof azimuth ${assess.roofAzimuthDeg}° vs ideal ${recommendedAzimuthDeg}° (deviation ${round(dev, 0)}°)`, "warn"),
+    check("assessment", "as-tilt", "Tilt allows self-cleaning (≥ 10°)", assess.roofPitchDeg >= 10 || assess.roofType === "ground" || racked, racked ? `Tilt frames at ${recommendedTiltDeg}° facing ${recommendedAzimuthDeg}° (${mount === "ground" ? "ground mount" : "flat roof"})` : `Roof pitch ${assess.roofPitchDeg}° (recommended ≈ ${recommendedTiltDeg}°); flatter roofs need tilt frames`, "warn"),
     check("assessment", "as-shading", "No significant shading obstructions", obstructions.every((o) => o.severity !== "high"), obstructions.length ? obstructions.map((o) => `${o.description} ${o.direction} ${round(o.elevationDeg, 0)}°`).join("; ") : "No obstructions recorded", "warn"),
     check("assessment", "as-structure", "Roof can carry the array dead load", deadLoadKgM2 <= assess.roofAllowableLoadKgM2 + 1e-6, `${round(deadLoadKgM2, 1)} kg/m² (${round(arrayWeightKg, 0)} kg in total) vs ${assess.roofAllowableLoadKgM2} kg/m² allowable`),
     check("assessment", "as-condition", "Roof condition acceptable", assess.roofCondition !== "poor", `Roof condition: ${assess.roofCondition}${assess.roofType === "asbestos" ? " (asbestos roof: do not drill; use a ground mount)" : ""}`, "warn"),

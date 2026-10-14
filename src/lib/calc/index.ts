@@ -4,7 +4,7 @@ import { computeBoq, type BoqResult } from "./boq";
 import { computeCables, type CableResult } from "./cables";
 import { CHEMISTRY_INFO } from "./constants";
 import { computeFinancial, type FinancialResult } from "./financial";
-import { computeLayout, computeSite, type LayoutResult, type SiteResult } from "./site";
+import { computeLayout, computeSite, resolveMount, type LayoutResult, type SiteResult } from "./site";
 import {
   computeBattery,
   computeController,
@@ -96,7 +96,7 @@ export function computeDesign(d: DesignInputs): DesignResults {
   });
 
   const layout = computeLayout(d.assessment, d.layout, d.pv.panel, strings.totalPanels, strings.series);
-  const site = computeSite(d.site, d.assessment, layout, d.pv.panel, strings.totalPanels, cables.acBreakerA);
+  const site = computeSite(d.site, d.assessment, layout, d.pv.panel, strings.totalPanels, cables.acBreakerA, resolveMount(d.assessment, d.layout));
 
   const boq = computeBoq({
     boq: d.boq,

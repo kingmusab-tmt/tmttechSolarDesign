@@ -1,11 +1,16 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
+import { resolveMount } from "@/lib/calc/site";
 import { fmt } from "@/lib/format";
+import { Array3dSvg } from "../diagrams/Array3dSvg";
 import { ArrayLayoutSvg } from "../diagrams/ArrayLayoutSvg";
+import { cx } from "../ui";
 import { Card, Field, KeyValue, NumInput, Select, Stat } from "../ui";
 import { useProject } from "../project/ProjectProvider";
 import { downloadSvg, slug, useSection } from "./shared";
+
+const MOUNT_NAMES = { flat: "flat roof", ground: "ground mount", gable: "gable roof", shed: "shed roof" } as const;
 
 export function LayoutStep() {
   const { results, project } = useProject();
@@ -13,6 +18,8 @@ export function LayoutStep() {
   const svgRef = useRef<SVGSVGElement>(null);
   const L = results.layout;
   const total = results.strings.totalPanels;
+  const [view, setView] = useState<"3d" | "plan">("3d");
+  const mount = resolveMount(project.assessment, lay);
 
   return (
     <div className="space-y-6">
@@ -24,15 +31,40 @@ export function LayoutStep() {
       </div>
 
       <Card
-        title="Roof layout"
-        subtitle={`${project.assessment.roofLengthM} × ${project.assessment.roofWidthM} m roof plane: modules coloured and labelled by string`}
+        title="Array layout"
+        subtitle={`${project.assessment.roofLengthM} × ${project.assessment.roofWidthM} m ${mount === "ground" ? "ground area" : "roof area"}: modules coloured and labelled by string`}
         actions={
-          <button className="btn btn-sm" onClick={() => downloadSvg(svgRef.current, `${slug(project.name)}-array-layout.svg`)}>
-            Download SVG
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <select className="input w-auto py-1 text-xs" value={lay.mountType} onChange={(e) => setLay({ mountType: e.target.value as typeof lay.mountType })} aria-label="Mounting type">
+              <option value="auto">Auto ({MOUNT_NAMES[resolveMount(project.assessment, { mountType: "auto" })]})</option>
+              <option value="flat">Flat roof</option>
+              <option value="ground">Ground mount</option>
+              <option value="gable">Gable roof</option>
+              <option value="shed">Shed roof</option>
+            </select>
+            <div className="inline-flex rounded-lg border border-line bg-surface-2 p-0.5 text-xs" role="radiogroup" aria-label="View">
+              {(
+                [
+                  ["3d", "3D view"],
+                  ["plan", "Top view"],
+                ] as const
+              ).map(([k, label]) => (
+                <button key={k} type="button" role="radio" aria-checked={view === k} onClick={() => setView(k)} className={cx("rounded-md px-2.5 py-1 font-medium whitespace-nowrap", view === k ? "bg-surface text-accent-strong shadow-sm" : "text-muted hover:text-text")}>
+                  {label}
+                </button>
+              ))}
+            </div>
+            <button className="btn btn-sm" onClick={() => downloadSvg(svgRef.current, `${slug(project.name)}-array-${view === "3d" ? mount : "plan"}.svg`)}>
+              Download SVG
+            </button>
+          </div>
         }
       >
-        <ArrayLayoutSvg ref={svgRef} layout={L} assessment={project.assessment} settings={lay} />
+        {view === "3d" ? (
+          <Array3dSvg ref={svgRef} layout={L} assessment={project.assessment} settings={lay} mount={mount} tiltDeg={results.site.recommendedTiltDeg} minSunAltitudeDeg={results.site.minNoonAltitudeDeg} azimuthDeg={results.site.recommendedAzimuthDeg} />
+        ) : (
+          <ArrayLayoutSvg ref={svgRef} layout={L} assessment={project.assessment} settings={lay} />
+        )}
       </Card>
 
       <div className="grid gap-6 xl:grid-cols-2">

@@ -177,7 +177,11 @@ export const AssessmentSchema = z.object({
   notes: s(),
 });
 
+export const MOUNT_TYPES = ["auto", "flat", "ground", "gable", "shed"] as const;
+
 export const LayoutSchema = z.object({
+  /** How the array is mounted; "auto" follows the site assessment (ground, flat below 5°, else gable). */
+  mountType: z.enum(MOUNT_TYPES).default("auto"),
   orientation: z.enum(["portrait", "landscape"]).default("portrait"),
   setbackM: n(0.5, 0, 5),
   gapM: n(0.02, 0, 1),

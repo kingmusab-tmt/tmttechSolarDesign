@@ -5,8 +5,8 @@ import type { LayoutResult } from "@/lib/calc/site";
 import type { Assessment, LayoutSettings } from "@/lib/schemas";
 
 /** Categorical slots in fixed order; string labels carry identity, so colour is never the only cue. */
-const STRING_COLORS = ["#2a78d6", "#eb6834", "#1baf7a", "#8a5a2b", "#e87ba4", "#008300", "#6250d6", "#e34948"];
-const DARK_TEXT = new Set([2, 4]); // aqua and pink need dark labels
+export const STRING_COLORS = ["#2a78d6", "#eb6834", "#1baf7a", "#8a5a2b", "#e87ba4", "#008300", "#6250d6", "#e34948"];
+export const DARK_TEXT = new Set([2, 4]); // aqua and pink need dark labels
 
 export const ArrayLayoutSvg = forwardRef<SVGSVGElement, { layout: LayoutResult; assessment: Assessment; settings: LayoutSettings; title?: string }>(function ArrayLayoutSvg({ layout, assessment, settings, title }, ref) {
   const W = 860;

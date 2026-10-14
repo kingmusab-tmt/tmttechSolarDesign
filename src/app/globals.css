@@ -26,6 +26,15 @@
   --sld-ac: #12355b;
   --sld-dc: #c2560c;
   --sld-pe: #15803d;
+  --ar-wall: #e7e2da;
+  --ar-wall-side: #cfc8bd;
+  --ar-roof: #9aa5b4;
+  --ar-roof-dark: #6b7686;
+  --ar-edge: #6b7280;
+  --ar-ground: #b9d89a;
+  --ar-ground-edge: #8bb36a;
+  --ar-frame: #4b5563;
+  --ar-module-frame: #e5e7eb;
   color-scheme: light;
 }
 
@@ -56,6 +65,15 @@
   --sld-ac: #93c5fd;
   --sld-dc: #fb923c;
   --sld-pe: #4ade80;
+  --ar-wall: #3b4049;
+  --ar-wall-side: #2c3038;
+  --ar-roof: #56606f;
+  --ar-roof-dark: #3e4652;
+  --ar-edge: #8a93a3;
+  --ar-ground: #34502a;
+  --ar-ground-edge: #4b6d3b;
+  --ar-frame: #c3cad5;
+  --ar-module-frame: #1f242c;
   color-scheme: dark;
 }
 
@@ -86,6 +104,15 @@
     --sld-ac: #93c5fd;
     --sld-dc: #fb923c;
     --sld-pe: #4ade80;
+    --ar-wall: #3b4049;
+    --ar-wall-side: #2c3038;
+    --ar-roof: #56606f;
+    --ar-roof-dark: #3e4652;
+    --ar-edge: #8a93a3;
+    --ar-ground: #34502a;
+    --ar-ground-edge: #4b6d3b;
+    --ar-frame: #c3cad5;
+    --ar-module-frame: #1f242c;
     color-scheme: dark;
   }
 }
@@ -155,7 +182,18 @@ body {
   }
 }
 
+/* Bill of Quantities PDF: the sheet exists only for printing, and while it prints nothing else does. */
+.boq-print {
+  display: none;
+}
+
 @media print {
+  body.print-boq > *:not(.boq-print) {
+    display: none !important;
+  }
+  body.print-boq > .boq-print {
+    display: block;
+  }
   @page {
     size: A4;
     margin: 14mm;
