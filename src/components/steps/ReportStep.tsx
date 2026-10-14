@@ -6,7 +6,7 @@ import { COMPLIANCE_ITEMS } from "@/lib/compliance";
 import { fmt, money } from "@/lib/format";
 import { STEPS } from "@/lib/steps";
 import { ArrayLayoutSvg } from "../diagrams/ArrayLayoutSvg";
-import { SldSvg } from "../diagrams/SldSvg";
+import { SldDiagram, SldStyleSwitch, useSldStyle } from "../diagrams/SldDiagram";
 import { StatusIcon } from "../ui";
 import { useEffect, useState } from "react";
 import { useProject } from "../project/ProjectProvider";
@@ -56,6 +56,7 @@ function T({ rows, head }: { rows: (string | number)[][]; head?: string[] }) {
 
 export function ReportStep() {
   const { project: p, results: r, progress } = useProject();
+  const [sldStyle, setSldStyle] = useSldStyle();
   const cur = p.boq.currency;
   const today = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
   const fails = r.checks.filter((c) => c.status === "fail");
@@ -199,7 +200,14 @@ export function ReportStep() {
         </Section>
 
         <Section n={6} title="Single-line diagram" breakBefore>
-          <SldSvg project={p} results={r} />
+          <div className="no-print mb-2 flex justify-end">
+            <SldStyleSwitch value={sldStyle} onChange={setSldStyle} />
+          </div>
+          <div className="overflow-x-auto print:overflow-visible">
+            <div className="min-w-[760px] print:min-w-0">
+              <SldDiagram project={p} results={r} style={sldStyle} />
+            </div>
+          </div>
         </Section>
 
         <Section n={7} title="Array layout & structure">

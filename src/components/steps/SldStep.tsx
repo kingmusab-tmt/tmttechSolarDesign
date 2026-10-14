@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { SldSvg } from "../diagrams/SldSvg";
+import { SldDiagram, SldStyleSwitch, useSldStyle } from "../diagrams/SldDiagram";
 import { Card } from "../ui";
 import { useProject } from "../project/ProjectProvider";
 import { downloadSvg, slug } from "./shared";
@@ -10,20 +10,24 @@ export function SldStep() {
   const { project, results } = useProject();
   const ref = useRef<SVGSVGElement>(null);
   const C = results.cables;
+  const [style, setStyle] = useSldStyle();
   return (
     <div className="space-y-6">
       <Card
         title="Single-line diagram"
         subtitle="Generated from the current design: every rating, cable size and protective device updates live"
         actions={
-          <button className="btn btn-sm" onClick={() => downloadSvg(ref.current, `${slug(project.name)}-sld.svg`)}>
-            Download SVG
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <SldStyleSwitch value={style} onChange={setStyle} />
+            <button className="btn btn-sm" onClick={() => downloadSvg(ref.current, `${slug(project.name)}-sld${style === "block" ? "-block" : ""}.svg`)}>
+              Download SVG
+            </button>
+          </div>
         }
         bodyClassName="p-2 sm:p-4 overflow-x-auto"
       >
-        <div className="min-w-[860px]">
-          <SldSvg ref={ref} project={project} results={results} />
+        <div className={style === "block" ? "min-w-[860px]" : "min-w-[960px]"}>
+          <SldDiagram ref={ref} project={project} results={results} style={style} />
         </div>
       </Card>
       <Card title="Schedule of protective devices">

@@ -23,6 +23,9 @@
   --series-2: #eb6834;
   --series-3: #1baf7a;
   --grid: #e5e7eb;
+  --sld-ac: #12355b;
+  --sld-dc: #c2560c;
+  --sld-pe: #15803d;
   color-scheme: light;
 }
 
@@ -50,6 +53,9 @@
   --series-2: #d95926;
   --series-3: #199e70;
   --grid: #2b313b;
+  --sld-ac: #93c5fd;
+  --sld-dc: #fb923c;
+  --sld-pe: #4ade80;
   color-scheme: dark;
 }
 
@@ -77,6 +83,9 @@
     --series-2: #d95926;
     --series-3: #199e70;
     --grid: #2b313b;
+    --sld-ac: #93c5fd;
+    --sld-dc: #fb923c;
+    --sld-pe: #4ade80;
     color-scheme: dark;
   }
 }
