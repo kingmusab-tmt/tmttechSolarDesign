@@ -1,13 +1,46 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { APP_NAME, COMPANY } from "@/lib/brand";
+import { SITE_DESCRIPTION, SITE_URL } from "@/lib/seo";
 import { getSession } from "@/lib/server/auth";
 import { STEPS } from "@/lib/steps";
+
+/** Structured data so search engines understand the app and who publishes it. */
+function jsonLd() {
+  const org = {
+    "@type": "Organization",
+    "@id": `${COMPANY.website}#organization`,
+    name: COMPANY.name,
+    url: COMPANY.website,
+    email: COMPANY.emails[1],
+    founder: { "@type": "Person", name: COMPANY.ceo, jobTitle: "CEO" },
+    contactPoint: COMPANY.phones.map((p) => ({ "@type": "ContactPoint", telephone: p.tel, contactType: "customer support", areaServed: "NG", availableLanguage: "English" })),
+  };
+  const app = {
+    "@type": "WebApplication",
+    "@id": `${SITE_URL}/#app`,
+    name: APP_NAME,
+    url: SITE_URL,
+    description: SITE_DESCRIPTION,
+    applicationCategory: "EngineeringApplication",
+    operatingSystem: "Any (web browser, installable PWA)",
+    browserRequirements: "Requires JavaScript",
+    offers: { "@type": "Offer", price: "0", priceCurrency: "NGN" },
+    featureList: STEPS.map((st) => st.title),
+    publisher: { "@id": org["@id"] },
+    creator: { "@id": org["@id"] },
+  };
+  const site = { "@type": "WebSite", "@id": `${SITE_URL}/#website`, name: APP_NAME, url: SITE_URL, publisher: { "@id": org["@id"] }, inLanguage: "en-NG" };
+  // Escape "<" so the JSON can never close the script element.
+  return JSON.stringify({ "@context": "https://schema.org", "@graph": [org, app, site] }).replace(/</g, "\\u003c");
+}
 
 export default async function Home() {
   if (await getSession()) redirect("/dashboard");
   const phases = ["Sizing", "Engineering", "Deliverables"] as const;
   return (
     <main className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd() }} />
       <section className="grid items-center gap-10 lg:grid-cols-[1.1fr_0.9fr]">
         <div>
           <span className="inline-block rounded-full bg-accent-soft px-3 py-1 text-xs font-semibold text-accent-strong">Progressive web app · works offline</span>
@@ -36,7 +69,9 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="mt-16 grid gap-6 md:grid-cols-3">
+      <h2 className="mt-16 text-2xl font-bold tracking-tight">From load audit to signed-off design in {STEPS.length} steps</h2>
+      <p className="mt-2 max-w-3xl text-muted">Each step checks the design against IEC standards and Nigerian requirements, so problems surface before installation, not after.</p>
+      <section className="mt-6 grid gap-6 md:grid-cols-3">
         {phases.map((phase) => (
           <div key={phase} className="card p-5">
             <h3 className="text-xs font-semibold tracking-wide text-accent-strong uppercase">{phase}</h3>

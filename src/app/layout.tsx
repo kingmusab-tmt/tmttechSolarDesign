@@ -2,14 +2,34 @@ import type { Metadata, Viewport } from "next";
 import { SiteFooter } from "@/components/SiteFooter";
 import { TopNav } from "@/components/TopNav";
 import { APP_NAME, APP_SHORT_NAME, COMPANY } from "@/lib/brand";
+import { KEYWORDS, SITE_DESCRIPTION, SITE_URL } from "@/lib/seo";
 import { RegisterSW } from "@/components/RegisterSW";
 import { VisitBeacon } from "@/components/VisitBeacon";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: { default: APP_NAME, template: `%s · ${APP_NAME}` },
-  description: "Engineer-grade solar home system design: load audit, sizing, string design, SLD, BoQ, financials and progress tracking.",
+  metadataBase: new URL(SITE_URL),
+  title: { default: `${APP_NAME}: Solar Home System Design Software`, template: `%s · ${APP_NAME}` },
+  description: SITE_DESCRIPTION,
+  keywords: KEYWORDS,
   applicationName: APP_NAME,
+  category: "engineering",
+  alternates: { canonical: "/" },
+  robots: { index: true, follow: true, googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 } },
+  openGraph: {
+    type: "website",
+    siteName: APP_NAME,
+    locale: "en_NG",
+    url: "/",
+    title: `${APP_NAME}: Solar Home System Design Software`,
+    description: SITE_DESCRIPTION,
+  },
+  twitter: { card: "summary_large_image", title: `${APP_NAME}: Solar Home System Design Software`, description: SITE_DESCRIPTION },
+  // Search Console / Bing ownership tokens, if configured.
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || undefined,
+    other: process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION ? { "msvalidate.01": process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION } : undefined,
+  },
   authors: [{ name: COMPANY.name, url: COMPANY.website }],
   creator: COMPANY.name,
   publisher: COMPANY.name,

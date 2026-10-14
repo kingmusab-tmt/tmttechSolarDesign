@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
+import { publicPage } from "@/lib/seo";
 import { APP_NAME, BSD_3_CLAUSE, COMPANY, DATA_CREDITS, SOFTWARE_CREDITS } from "@/lib/brand";
 
-export const metadata: Metadata = { title: "Credits and attributions" };
+export const metadata: Metadata = publicPage("/credits", "Credits and attributions", "Data sources, licences and open-source software behind the solar design app: NASA POWER, Global Solar Atlas, the CEC module list via NREL SAM, and more.");
 
 export default function CreditsPage() {
   return (

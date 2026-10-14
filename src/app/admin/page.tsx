@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
+import { PRIVATE } from "@/lib/seo";
 import { notFound, redirect } from "next/navigation";
 import { AdminConsole } from "@/components/admin/AdminConsole";
 import { getSession } from "@/lib/server/auth";
 import { connectDB } from "@/lib/server/db";
 import { User } from "@/models/User";
 
-export const metadata: Metadata = { title: "Admin" };
+export const metadata: Metadata = { title: "Admin", robots: PRIVATE };
 export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {

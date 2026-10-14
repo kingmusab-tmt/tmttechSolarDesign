@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { PRIVATE } from "@/lib/seo";
 import { redirect } from "next/navigation";
 import { NewProjectForm } from "@/components/dashboard/NewProjectForm";
 import { ProjectGrid } from "@/components/dashboard/ProjectGrid";
@@ -6,7 +7,7 @@ import { fmt, moneyCompact } from "@/lib/format";
 import { getSession } from "@/lib/server/auth";
 import { listProjectSummaries, type ProjectSummary } from "@/lib/server/projects";
 
-export const metadata: Metadata = { title: "Projects" };
+export const metadata: Metadata = { title: "Projects", robots: PRIVATE };
 export const dynamic = "force-dynamic";
 
 

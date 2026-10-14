@@ -88,6 +88,14 @@ public/sw.js         Service worker
 
 > Location climate presets, the cable ampacity table and the BoQ prices are indicative. Verify them against site data, datasheets, supplier quotes and the applicable standards. Final designs require sign-off by a COREN-registered engineer.
 
+## Search engines (SEO)
+
+Set `NEXT_PUBLIC_SITE_URL` to the live address (e.g. `https://solar.triplemultipurposetechnology.com.ng`) before building for production. It drives canonical links, `/sitemap.xml`, `/robots.txt` and the share-preview image (`/opengraph-image`).
+
+- Public pages (home, quick calculator, sign-up, sign-in, credits) are indexed with their own titles and descriptions; the home page carries schema.org structured data (Organization, WebApplication, WebSite).
+- Signed-in pages (projects, equipment, organisations, approvals, account, admin) are marked `noindex` and disallowed in `robots.txt`, so private designs never appear in search results.
+- After deploying, add the site in Google Search Console and Bing Webmaster Tools, put their verification tokens in `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` / `NEXT_PUBLIC_BING_SITE_VERIFICATION`, and submit `https://<your-domain>/sitemap.xml`.
+
 ## Credits and attributions
 
 - **NASA POWER**: these data were obtained from the NASA Langley Research Center (LaRC) POWER Project funded through the NASA Earth Science/Applied Science Program.
