@@ -9,7 +9,11 @@ import { resolveMount } from "@/lib/calc/site";
 import { Array3dSvg } from "../diagrams/Array3dSvg";
 import { ArrayLayoutSvg } from "../diagrams/ArrayLayoutSvg";
 import { SldDiagram, SldStyleSwitch, useSldStyle } from "../diagrams/SldDiagram";
-import { StatusIcon } from "../ui";
+import { DistributionTable } from "./DistributionTable";
+import { CableScheduleTable, StringPlanTable } from "./ScheduleTables";
+import { YearSimCard } from "./YearSimCard";
+import { GRID_SETTINGS, maintenancePlan } from "@/lib/calc/handover";
+import { CheckList, StatusIcon } from "../ui";
 import { useEffect, useState } from "react";
 import { useProject } from "../project/ProjectProvider";
 import { useRevisions } from "../project/Revisions";
@@ -59,6 +63,7 @@ function T({ rows, head }: { rows: (string | number)[][]; head?: string[] }) {
 export function ReportStep() {
   const { project: p, results: r, progress } = useProject();
   const [sldStyle, setSldStyle] = useSldStyle();
+  const readiness = r.checks.filter((c) => c.step === "report");
   const cur = p.boq.currency;
   const today = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
   const fails = r.checks.filter((c) => c.status === "fail");
@@ -81,6 +86,18 @@ export function ReportStep() {
           Print / Save as PDF
         </button>
       </div>
+
+      {readiness.length > 0 && (
+        <div className="no-print mb-4 rounded-xl border border-line bg-surface p-4">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <h2 className="font-semibold">Ready to issue for construction?</h2>
+            <span className="text-xs text-muted">
+              {readiness.filter((c) => c.status === "pass").length} of {readiness.length} complete
+            </span>
+          </div>
+          <CheckList checks={readiness} />
+        </div>
+      )}
 
       <article className="card space-y-8 p-6 sm:p-10 print:border-0 print:p-0">
         <header className="flex flex-wrap items-start justify-between gap-4 border-b border-line pb-6">
@@ -194,14 +211,19 @@ export function ReportStep() {
           </div>
         </Section>
 
-        <Section n={5} title="Cables & protection">
+        <Section n={5} title="Year-round energy simulation">
+          <YearSimCard sim={r.simulation} compact />
+        </Section>
+
+        <Section n={6} title="Cables & protection">
           <T head={["Circuit", "Length", "Current", "Cable", "Drop", "Protection"]} rows={r.cables.segments.map((s) => [s.label, `${s.lengthM} m`, `${fmt(s.operatingA, 1)} A`, `${s.sizeMm2} mm²`, `${fmt(s.dropPct, 2)} %`, s.protectionLabel])} />
           <p className="mt-2 text-xs text-muted">
-            DC SPD Type II Ucpv {r.cables.dcSpdUcpv} V · {r.cables.acSpd} · Earthing: {r.cables.earthing.electrode}, ≤ {r.cables.earthing.targetOhm} Ω, {r.cables.earthing.mainEarthMm2} mm² main / {r.cables.earthing.bondingMm2} mm² bonding
+            DC SPD Type II Ucpv {r.cables.dcSpdUcpv} V · AC SPD {r.protection.lightning.acSpd} · Battery fault ≈ {fmt(r.protection.batteryIscKA, 1)} kA → {r.protection.batteryDevice} · Lightning Nd {r.protection.lightning.nd.toExponential(1)}/yr ({r.protection.lightning.level}
+            {r.protection.lightning.lps ? ", external LPS recommended" : ""}) · Earthing: {r.cables.earthing.electrode}, ≤ {r.cables.earthing.targetOhm} Ω, {r.cables.earthing.mainEarthMm2} mm² main / {r.cables.earthing.bondingMm2} mm² bonding
           </p>
         </Section>
 
-        <Section n={6} title="Single-line diagram" breakBefore>
+        <Section n={7} title="Single-line diagram" breakBefore>
           <div className="no-print mb-2 flex justify-end">
             <SldStyleSwitch value={sldStyle} onChange={setSldStyle} />
           </div>
@@ -210,20 +232,34 @@ export function ReportStep() {
               <SldDiagram project={p} results={r} style={sldStyle} />
             </div>
           </div>
+          <h3 className="mt-5 mb-2 font-semibold">String wiring plan</h3>
+          <div className="overflow-x-auto">
+            <StringPlanTable s={r.schedules} />
+          </div>
+          <h3 className="mt-5 mb-2 font-semibold">Cable schedule</h3>
+          <div className="overflow-x-auto">
+            <CableScheduleTable s={r.schedules} />
+          </div>
+          <h3 className="mt-5 mb-2 font-semibold">Essential-loads distribution board ({r.distribution.boardWays}-way)</h3>
+          <div className="overflow-x-auto">
+            <DistributionTable d={r.distribution} />
+          </div>
         </Section>
 
-        <Section n={7} title="Array layout & structure">
-          <Array3dSvg layout={r.layout} assessment={p.assessment} settings={p.layout} mount={resolveMount(p.assessment, p.layout)} tiltDeg={r.site.recommendedTiltDeg} minSunAltitudeDeg={r.site.minNoonAltitudeDeg} azimuthDeg={r.site.recommendedAzimuthDeg} />
+        <Section n={8} title="Array layout & structure">
+          <Array3dSvg layout={r.layout} assessment={p.assessment} settings={p.layout} mount={resolveMount(p.assessment, p.layout)} tiltDeg={r.site.recommendedTiltDeg} minSunAltitudeDeg={r.site.minNoonAltitudeDeg} azimuthDeg={r.site.recommendedAzimuthDeg} rowPitchM={r.structure.rowPitchM} />
           <div className="mt-4">
             <ArrayLayoutSvg layout={r.layout} assessment={p.assessment} settings={p.layout} title="PV array top view" />
           </div>
           <p className="mt-2 text-sm">
-            Dead load {fmt(r.site.deadLoadKgM2, 1)} kg/m² (total {fmt(r.site.arrayWeightKg)} kg) against an allowable {p.assessment.roofAllowableLoadKgM2} kg/m². Mounting: {r.layout.railPieces} rails, {r.layout.midClamps} mid clamps, {r.layout.endClamps} end clamps,{" "}
-            {r.layout.roofAttachments} roof attachments.
+            {r.structure.mount === "ground" ? "Ground mount" : `Roof load ${fmt(r.structure.racked ? r.structure.totalDeadLoadKgM2 : r.site.deadLoadKgM2, 1)} kg/m² (array ${fmt(r.site.arrayWeightKg)} kg${r.structure.ballastKg ? ` + ballast ${fmt(r.structure.ballastKg)} kg` : ""}) against an allowable ${p.assessment.roofAllowableLoadKgM2} kg/m²`}. Mounting: {r.layout.railPieces} rails, {r.layout.midClamps} mid clamps, {r.layout.endClamps} end clamps
+            {r.structure.racked ? `, ${r.structure.frames} tilt frames at ${fmt(r.structure.tiltDeg)}° (rows ${fmt(r.structure.rowPitchM, 2)} m apart)` : `, ${r.layout.roofAttachments} roof attachments`}
+            {r.structure.mount === "ground" ? `, ${r.structure.posts} posts on ${fmt(r.structure.footingDepthM, 2)} m deep footings` : ""}
+            {r.structure.mount === "flat" && r.structure.ballastKg ? `, ${r.structure.ballastBlocks} ballast blocks` : ""}. Wind: qp {fmt(r.structure.windPressureKPa, 2)} kPa, uplift {fmt(r.structure.upliftKN, 1)} kN (vb {p.assessment.windSpeedMs} m/s).
           </p>
         </Section>
 
-        <Section n={8} title="Bill of Quantities" breakBefore>
+        <Section n={9} title="Bill of Quantities" breakBefore>
           <T
             head={["#", "Description", "Qty", "Unit price", "Total"]}
             rows={[
@@ -236,7 +272,7 @@ export function ReportStep() {
           />
         </Section>
 
-        <Section n={9} title="Financial analysis">
+        <Section n={10} title="Financial analysis">
           <T
             rows={[
               ["Capital cost", money(r.financial.capex, cur)],
@@ -251,7 +287,7 @@ export function ReportStep() {
           />
         </Section>
 
-        <Section n={10} title="Design verification & compliance" breakBefore>
+        <Section n={11} title="Design verification & compliance" breakBefore>
           <ul className="space-y-1.5">
             {r.checks
               .filter((c) => c.status !== "info")
@@ -272,6 +308,66 @@ export function ReportStep() {
               return [i.label, i.standard, v?.checked ? "✓" : "–", v?.notes ?? ""];
             })}
           />
+        </Section>
+
+        <Section n={12} title="Commissioning record (IEC 62446-1)" breakBefore>
+          {r.commissioning.tested ? (
+            <>
+              <T
+                head={["String", "Voc measured", "Voc expected", "Isc measured", "Isc expected", "Polarity", `Insulation (≥ ${r.commissioning.insulationMinMOhm} MΩ @ ${r.commissioning.insulationTestV} V)`]}
+                rows={r.commissioning.strings.map((t) => [
+                  t.key,
+                  t.test.vocV ? `${fmt(t.test.vocV, 1)} V @ ${t.test.cellTempC || 25} °C` : "–",
+                  `${fmt(t.expectedVocV, 1)} V${t.vocDevPct !== null ? ` (${t.vocDevPct >= 0 ? "+" : ""}${fmt(t.vocDevPct, 1)} %, ${t.voc})` : ""}`,
+                  t.test.iscA ? `${fmt(t.test.iscA, 2)} A @ ${fmt(t.test.irradianceWm2)} W/m²` : "–",
+                  `${fmt(t.expectedIscA, 2)} A${t.iscDevPct !== null ? ` (${t.iscDevPct >= 0 ? "+" : ""}${fmt(t.iscDevPct, 1)} %, ${t.isc})` : ""}`,
+                  t.polarity === "untested" ? "–" : t.polarity === "pass" ? "✓" : "✗",
+                  t.test.insulationMOhm ? `${fmt(t.test.insulationMOhm, 1)} MΩ (${t.insulation})` : "–",
+                ])}
+              />
+              <p className="mt-2 text-sm">
+                Earth electrode {p.handover.earthOhm ? `${fmt(p.handover.earthOhm, 1)} Ω (${r.commissioning.earth}, target ≤ ${r.commissioning.earthTargetOhm} Ω)` : "not measured"} · RCD trip {p.handover.rcdTripMs ? `${fmt(p.handover.rcdTripMs)} ms (${r.commissioning.rcd})` : "not measured"} · AC output {p.handover.acVoltageV ? `${fmt(p.handover.acVoltageV)} V` : "–"} · Functional tests {r.commissioning.functionalDone}/{r.commissioning.functionalTotal}.
+              </p>
+              <p className="mt-1 text-xs text-muted">
+                Tested by {p.handover.testedBy || "________"} on {p.handover.testDate || "________"} with {p.handover.instrument || "________"}. Overall: {r.commissioning.allPassed ? "all tests passed" : "not all tests passed or complete"}.
+              </p>
+            </>
+          ) : (
+            <p className="text-sm text-muted">Commissioning tests have not been recorded yet. Complete them in the Commissioning & Handover step after installation.</p>
+          )}
+        </Section>
+
+        <Section n={13} title="Grid connection, maintenance & handover">
+          <h3 className="mb-2 font-semibold">Grid connection</h3>
+          {r.grid.mode === "none" ? (
+            <p className="text-sm">Off-grid: no utility connection.</p>
+          ) : (
+            <>
+              <p className="text-sm">
+                {r.grid.mode === "export" ? `Exporting to the grid${p.handover.grid.exportLimitW ? `, limit ${fmt(p.handover.grid.exportLimitW)} W` : ""}` : "Grid used for backup and charging only; zero export"}. DisCo: {p.handover.grid.disco || "–"} · Account {p.handover.grid.accountNumber || "–"} · Meter {p.handover.grid.meterNumber || "–"} · Ref {p.handover.grid.applicationRef || "–"}.
+              </p>
+              <T head={["Requirement", "Done"]} rows={r.grid.steps.map((st) => [st.label, p.handover.grid.steps[st.key] ? "✓" : "–"])} />
+              {r.grid.mode === "export" && (
+                <div className="mt-2">
+                  <T head={["Protection setting (typical, confirm with the DisCo)", "Value"]} rows={GRID_SETTINGS} />
+                </div>
+              )}
+            </>
+          )}
+          <h3 className="mt-5 mb-2 font-semibold">Operation & maintenance plan</h3>
+          <T
+            head={["When", "Task", "By"]}
+            rows={maintenancePlan({ battery: p.battery, batteryLifeYears: r.financial.batteryLifeYears, inverterLifeYears: p.financial.inverterLifeYears || 10, hasController: r.controller.applicable, ground: r.structure.mount === "ground" }).map((t) => [t.interval, t.task, t.by])}
+          />
+          <h3 className="mt-5 mb-2 font-semibold">Warranty register</h3>
+          {p.handover.warranties.length ? (
+            <T head={["Item", "Make / model", "Serial number(s)", "Qty", "Warranty"]} rows={p.handover.warranties.map((w) => [w.item, w.model || "–", w.serial || "–", w.quantity, `${w.warrantyYears} yr`])} />
+          ) : (
+            <p className="text-sm text-muted">Not recorded yet.</p>
+          )}
+          <p className="mt-3 text-sm">
+            Handed over {p.handover.handoverDate || "________"} to {p.handover.receivedBy || "________"}.{p.handover.notes ? ` Notes: ${p.handover.notes}` : ""}
+          </p>
         </Section>
 
         <section className="grid gap-8 border-t border-line pt-6 sm:grid-cols-2">

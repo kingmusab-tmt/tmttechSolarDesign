@@ -4,12 +4,17 @@ import { useRef } from "react";
 import { SldDiagram, SldStyleSwitch, useSldStyle } from "../diagrams/SldDiagram";
 import { Card } from "../ui";
 import { useProject } from "../project/ProjectProvider";
-import { downloadSvg, slug } from "./shared";
+import { DistributionTable } from "./DistributionTable";
+import { CableScheduleTable, StringPlanTable } from "./ScheduleTables";
+import { downloadSvg, slug, useSection } from "./shared";
+import { Field, NumInput } from "../ui";
 
 export function SldStep() {
   const { project, results } = useProject();
   const ref = useRef<SVGSVGElement>(null);
   const C = results.cables;
+  const D = results.distribution;
+  const [cab, setCab] = useSection("cables");
   const [style, setStyle] = useSldStyle();
   return (
     <div className="space-y-6">
@@ -28,6 +33,30 @@ export function SldStep() {
       >
         <div className={style === "block" ? "min-w-[860px]" : "min-w-[960px]"}>
           <SldDiagram ref={ref} project={project} results={results} style={style} />
+        </div>
+      </Card>
+      <Card
+        title="Essential-loads distribution board"
+        subtitle={`Final circuits fed by the inverter: ${D.circuits.length} circuits + main switch and SPD use ${D.waysUsed} ways; specify a ${D.boardWays}-way board (25 % spare). Existing house wiring can be reused where it meets these sizes.`}
+        actions={
+          <Field label="Typical circuit length">
+            <NumInput value={cab.finalCircuitLengthM} min={1} max={500} onChange={(finalCircuitLengthM) => setCab({ finalCircuitLengthM })} suffix="m" />
+          </Field>
+        }
+        bodyClassName="p-0"
+      >
+        <div className="overflow-x-auto">
+          <DistributionTable d={D} />
+        </div>
+      </Card>
+      <Card title="String wiring plan" subtitle="Which modules form each string (rows and positions as on the array layout) and where each string connects" bodyClassName="p-0">
+        <div className="overflow-x-auto">
+          <StringPlanTable s={results.schedules} />
+        </div>
+      </Card>
+      <Card title="Cable schedule" subtitle="Tag every cable at both ends with these references" bodyClassName="p-0">
+        <div className="overflow-x-auto">
+          <CableScheduleTable s={results.schedules} />
         </div>
       </Card>
       <Card title="Schedule of protective devices">

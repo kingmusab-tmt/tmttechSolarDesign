@@ -35,7 +35,7 @@ export function MobileNav({ links, userName, signedIn }: { links: NavLink[]; use
 
   return (
     <div className="lg:hidden">
-      <button className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-line bg-surface" aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open} aria-controls="mobile-menu" onClick={() => setOpen((v) => !v)}>
+      <button data-tour="nav-mobile" className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-line bg-surface" aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open} aria-controls="mobile-menu" onClick={() => setOpen((v) => !v)}>
         <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true">
           {open ? <path d="M6 6l12 12M18 6L6 18" /> : <path d="M4 7h16M4 12h16M4 17h16" />}
         </svg>

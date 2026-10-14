@@ -69,19 +69,21 @@ export function MonthlyChart({ values, unit, title, highlight, reference }: { va
           <span className="font-semibold">{MONTH_LABELS[hover]}</span>: {values[hover].toFixed(2)} {unit}
         </div>
       )}
-      <table className="sr-only">
-        <caption>{title}</caption>
-        <tbody>
-          {values.map((v, i) => (
-            <tr key={i}>
-              <th>{MONTH_LABELS[i]}</th>
-              <td>
-                {v} {unit}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div className="sr-only">
+        <table>
+          <caption>{title}</caption>
+          <tbody>
+            {values.map((v, i) => (
+              <tr key={i}>
+                <th>{MONTH_LABELS[i]}</th>
+                <td>
+                  {v} {unit}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </figure>
   );
 }

@@ -20,6 +20,7 @@ export function LayoutStep() {
   const total = results.strings.totalPanels;
   const [view, setView] = useState<"3d" | "plan">("3d");
   const mount = resolveMount(project.assessment, lay);
+  const ST = results.structure;
 
   return (
     <div className="space-y-6">
@@ -61,7 +62,7 @@ export function LayoutStep() {
         }
       >
         {view === "3d" ? (
-          <Array3dSvg ref={svgRef} layout={L} assessment={project.assessment} settings={lay} mount={mount} tiltDeg={results.site.recommendedTiltDeg} minSunAltitudeDeg={results.site.minNoonAltitudeDeg} azimuthDeg={results.site.recommendedAzimuthDeg} />
+          <Array3dSvg ref={svgRef} layout={L} assessment={project.assessment} settings={lay} mount={mount} tiltDeg={results.site.recommendedTiltDeg} minSunAltitudeDeg={results.site.minNoonAltitudeDeg} azimuthDeg={results.site.recommendedAzimuthDeg} rowPitchM={results.structure.rowPitchM} />
         ) : (
           <ArrayLayoutSvg ref={svgRef} layout={L} assessment={project.assessment} settings={lay} />
         )}
@@ -86,21 +87,54 @@ export function LayoutStep() {
             <Field label="Gap between modules" hint="Clamp width, typically 20 mm">
               <NumInput value={lay.gapM} min={0} max={1} step={0.01} onChange={(gapM) => setLay({ gapM })} suffix="m" />
             </Field>
+            {mount === "flat" && (
+              <Field label="Flat-roof fixing" hint="Ballast avoids drilling the roof but adds weight">
+                <Select
+                  value={lay.flatFixing}
+                  onChange={(flatFixing) => setLay({ flatFixing })}
+                  options={[
+                    { value: "ballast", label: "Ballast blocks (no roof penetrations)" },
+                    { value: "anchored", label: "Chemical anchors into the slab" },
+                  ]}
+                />
+              </Field>
+            )}
             <Field label="Gap between rows">
               <NumInput value={lay.rowGapM} min={0} max={5} step={0.05} onChange={(rowGapM) => setLay({ rowGapM })} suffix="m" />
             </Field>
           </div>
         </Card>
-        <Card title="Mounting hardware">
+        <Card title="Mounting hardware" subtitle={ST.racked ? `Tilt frames at ${fmt(ST.tiltDeg)}°, rows ${fmt(ST.rowPitchM, 2)} m apart` : "Rails fixed parallel to the roof"}>
           <KeyValue
             rows={[
               ["Aluminium rails (4.2 m)", `${L.railPieces} pcs (${fmt(L.railLengthM, 1)} m)`],
               ["Rail splices", `${L.railSplices} pcs`],
               ["Mid clamps", `${L.midClamps} pcs`],
               ["End clamps", `${L.endClamps} pcs`],
-              ["Roof hooks / L-feet", `${L.roofAttachments} pcs`],
+              ...(ST.racked ? [[`Tilt frames (${fmt(ST.tiltDeg)}°)`, `${ST.frames} pcs`] as [string, string]] : [["Roof hooks / L-feet", `${L.roofAttachments} pcs`] as [string, string]]),
+              ...(ST.mount === "flat" && ST.ballastKg > 0 ? [["Ballast (25 kg blocks)", `${ST.ballastBlocks} pcs (${fmt(ST.ballastKg)} kg)`] as [string, string]] : []),
+              ...(ST.mount === "flat" && ST.anchors > 0 ? [["Chemical anchors", `${ST.anchors} pcs`] as [string, string]] : []),
+              ...(ST.mount === "ground"
+                ? [
+                    ["Steel posts", `${ST.posts} pcs`] as [string, string],
+                    ["Concrete footings", `${ST.footings} × 300 × 300 × ${Math.round(ST.footingDepthM * 1000)} mm (${fmt(ST.concreteM3, 2)} m³)`] as [string, string],
+                  ]
+                : []),
               ["Module earthing clips", `${total} pcs`],
               ["Module area", `${fmt(L.arrayAreaM2, 1)} m²`],
+            ]}
+          />
+        </Card>
+        <Card title="Wind uplift" subtitle="Simplified check after EN 1991-1-4. Confirm fixings with the racking supplier and a structural engineer.">
+          <KeyValue
+            rows={[
+              ["Peak velocity pressure qp", `${fmt(ST.windPressureKPa, 2)} kPa (vb ${project.assessment.windSpeedMs} m/s)`],
+              ["Uplift on the array", `${fmt(ST.upliftKN, 1)} kN (× 1.5 safety factor = ${fmt(ST.upliftKN * 1.5, 1)} kN)`],
+              ...(ST.mount === "flat" && lay.flatFixing === "ballast"
+                ? [["Ballast to resist uplift", `${fmt(ST.ballastKg)} kg`] as [string, string]]
+                : [[ST.mount === "ground" ? "Per footing" : "Per fixing", `${fmt(ST.designUpliftPerFixingKN, 2)} kN vs ${fmt(ST.fixingCapacityKN, 2)} kN capacity`] as [string, string]]),
+              ...(ST.mount !== "ground" ? [["Roof load incl. ballast", `${fmt(ST.totalDeadLoadKgM2, 1)} kg/m² vs ${project.assessment.roofAllowableLoadKgM2} kg/m² allowable`] as [string, string]] : []),
+              ...(ST.racked ? [["Depth needed for the rows", `${fmt(ST.depthNeededM, 1)} m of ${fmt(project.assessment.roofWidthM, 1)} m`] as [string, string]] : []),
             ]}
           />
         </Card>

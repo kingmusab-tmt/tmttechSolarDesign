@@ -5,6 +5,14 @@ import { computeCables, type CableResult } from "./cables";
 import { CHEMISTRY_INFO } from "./constants";
 import { computeFinancial, type FinancialResult } from "./financial";
 import { computeLayout, computeSite, resolveMount, type LayoutResult, type SiteResult } from "./site";
+import { computeStructure, type StructureResult } from "./structure";
+import { computeCommissioning, type CommissioningResult } from "./commissioning";
+import { computeDistribution, type DistributionResult } from "./distribution";
+import { simulateYear, type SimulationResult } from "./simulation";
+import { computeProtection, type ProtectionResult } from "./protection";
+import { computeGrid, handoverChecks } from "./handover";
+import { computeSchedules, type Schedules } from "./schedule";
+import { readinessChecks } from "./readiness";
 import {
   computeBattery,
   computeController,
@@ -32,6 +40,13 @@ export interface DesignResults {
   cables: CableResult;
   layout: LayoutResult;
   site: SiteResult;
+  structure: StructureResult;
+  commissioning: CommissioningResult;
+  distribution: DistributionResult;
+  simulation: SimulationResult;
+  protection: ProtectionResult;
+  grid: ReturnType<typeof computeGrid>;
+  schedules: Schedules;
   boq: BoqResult;
   financial: FinancialResult;
   checks: Check[];
@@ -93,10 +108,29 @@ export function computeDesign(d: DesignInputs): DesignResults {
     inverterRatedW: inverter.ratedPowerW,
     inverterEff: d.inverter.efficiency,
     gridAvailable: d.site.gridAvailable,
+    siteMaxC: d.site.tMax,
   });
 
   const layout = computeLayout(d.assessment, d.layout, d.pv.panel, strings.totalPanels, strings.series);
-  const site = computeSite(d.site, d.assessment, layout, d.pv.panel, strings.totalPanels, cables.acBreakerA, resolveMount(d.assessment, d.layout));
+  const mount = resolveMount(d.assessment, d.layout);
+  const site = computeSite(d.site, d.assessment, layout, d.pv.panel, strings.totalPanels, cables.acBreakerA, mount);
+  const structure = computeStructure({ assess: d.assessment, settings: d.layout, layout, panel: d.pv.panel, totalPanels: strings.totalPanels, mount, recommendedTiltDeg: site.recommendedTiltDeg, minNoonAltitudeDeg: site.minNoonAltitudeDeg });
+
+  const simulation = simulateYear({
+    loads: d.loads,
+    dailyWh: load.dailyWh,
+    dailyYieldKWhPerPsh: (strings.arrayW * d.pv.systemEfficiency * pvReq.shadingFactor) / 1000,
+    monthlyPsh: d.site.monthlyPsh.length === 12 ? d.site.monthlyPsh : new Array(12).fill(d.site.peakSunHours),
+    usableKWh: battery.usableKWh,
+    roundTrip: d.battery.chemistry === "lifepo4" ? 0.95 : 0.85,
+    backupAvailable: d.site.gridAvailable,
+  });
+  const distribution = computeDistribution({ loads: d.loads, cables: d.cables, siteMaxC: d.site.tMax });
+  const protection = computeProtection({ battery, batterySettings: d.battery, cables, cableSettings: d.cables, inverterRatedW: inverter.ratedPowerW, distribution, assess: d.assessment, mount, gridAvailable: d.site.gridAvailable });
+  const grid = computeGrid(d.handover, d.site.gridAvailable);
+  const schedules = computeSchedules({ cables, distribution, strings, controller, layout, hybrid: d.inverter.type === "hybrid" });
+  const handoverStarted = Object.values(d.handover.stringTests).some((t) => t.vocV > 0 || t.iscA > 0) || d.handover.earthOhm > 0 || Object.values(d.handover.grid.steps).some(Boolean) || d.handover.warranties.length > 0 || Boolean(d.handover.handoverDate);
+  const commissioning = computeCommissioning({ handover: d.handover, panel: d.pv.panel, strings, earthTargetOhm: cables.earthing.targetOhm, gridAvailable: d.site.gridAvailable });
 
   const boq = computeBoq({
     boq: d.boq,
@@ -111,6 +145,9 @@ export function computeDesign(d: DesignInputs): DesignResults {
     cables,
     cableSettings: d.cables,
     layout,
+    structure,
+    distribution,
+    protection,
   });
 
   const financial = computeFinancial({
@@ -155,15 +192,23 @@ export function computeDesign(d: DesignInputs): DesignResults {
     ...load.checks,
     ...inverter.checks,
     ...battery.checks,
+    ...(load.dailyWh > 0 ? simulation.checks : []),
     ...pvChecks,
     ...strings.checks,
     ...controller.checks,
     ...cables.checks,
+    ...distribution.checks,
+    ...protection.checks,
     ...site.checks.filter((c) => c.step !== "site"),
+    ...structure.checks,
     ...financial.checks,
+    ...(load.dailyWh > 0 ? readinessChecks(d, { inverter, controller, boq }) : []),
+    ...commissioning.checks,
+    // Post-installation items are only reported once commissioning / handover has started.
+    ...(handoverStarted ? [...grid.checks, ...handoverChecks(d.handover)] : []),
   ];
 
-  return { load, inverter, battery, pv, strings, controller, cables, layout, site, boq, financial, checks };
+  return { load, inverter, battery, pv, strings, controller, cables, layout, site, structure, commissioning, distribution, simulation, protection, grid, schedules, boq, financial, checks };
 }
 
 export function checksForStep(results: DesignResults, step: StepKey) {

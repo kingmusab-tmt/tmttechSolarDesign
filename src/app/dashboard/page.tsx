@@ -43,7 +43,7 @@ export default async function Dashboard() {
 
       {dbError && <div className="mt-6 rounded-xl border border-bad/30 bg-bad-soft px-4 py-3 text-sm text-bad">{dbError}</div>}
 
-      <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-5">
+      <div data-tour="stats" className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-5">
         {[
           ["Projects", fmt(totals.count)],
           ["PV designed", `${fmt(totals.kWp, 1)} kWp`],
@@ -59,7 +59,7 @@ export default async function Dashboard() {
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
-        <section className="min-w-0">
+        <section data-tour="projects" className="min-w-0">
           {projects.length === 0 && !dbError ? (
             <div className="card flex flex-col items-center justify-center p-12 text-center">
               <div className="text-4xl">☀️</div>
@@ -70,7 +70,7 @@ export default async function Dashboard() {
             <ProjectGrid projects={projects} />
           )}
         </section>
-        <aside>
+        <aside data-tour="new-project">
           <NewProjectForm />
         </aside>
       </div>

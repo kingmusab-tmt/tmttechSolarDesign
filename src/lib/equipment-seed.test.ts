@@ -77,7 +77,7 @@ describe("designs built from verified equipment", () => {
     expect(r.inverter.isSelected).toBe(true);
     expect(r.strings.device.maxDcVoltage).toBe(500);
     expect(r.battery.bankVoltage).toBe(48);
-    expect(r.checks.filter((c) => c.step !== "financial" && (c.status === "fail" || c.status === "warn"))).toEqual([]);
+    expect(r.checks.filter((c) => c.step !== "financial" && c.step !== "report" && (c.status === "fail" || c.status === "warn"))).toEqual([]);
   });
 
   it("Victron MultiPlus-II + SmartSolar 250/70 (standalone) sizes strings against the controller", () => {

@@ -50,19 +50,21 @@ export function HBarChart({ data, unit, format = (v) => v.toFixed(0), title }: {
         })}
         <line x1={labelW} x2={labelW} y1={0} y2={H} stroke="var(--grid)" />
       </svg>
-      <table className="sr-only">
-        <caption>{title}</caption>
-        <tbody>
-          {data.map((d) => (
-            <tr key={d.label}>
-              <th>{d.label}</th>
-              <td>
-                {format(d.value)} {unit}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div className="sr-only">
+        <table>
+          <caption>{title}</caption>
+          <tbody>
+            {data.map((d) => (
+              <tr key={d.label}>
+                <th>{d.label}</th>
+                <td>
+                  {format(d.value)} {unit}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </figure>
   );
 }

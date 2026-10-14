@@ -147,6 +147,13 @@ export const CablesSchema = z.object({
   batteryDropPct: n(1, 0.1, 10),
   acDropPct: n(3, 0.1, 10),
   acVoltage: n(230, 100, 480),
+  // Derating (IEC 60364-5-52): air temperature around the cables, installation method and grouping.
+  indoorAmbientC: n(0, 0, 80), // 0 = use the site's record high temperature
+  roofAmbientC: n(70, 20, 90), // PV cables on the roof / behind modules in the sun
+  installMethod: z.enum(["air", "clipped", "conduit", "insulated"]).default("conduit"),
+  bunchStrings: b(true), // PV string cables run together in one tray or conduit
+  finalCircuitLengthM: n(20, 1, 500), // typical run from the essential-loads board to the furthest point
+  inverterFaultFactor: n(2, 1, 20), // inverter short-circuit output as a multiple of rated current (datasheet)
 });
 
 export const COMPASS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"] as const;
@@ -168,6 +175,13 @@ export const AssessmentSchema = z.object({
   roofLengthM: n(10, 0.5, 500), // along the eave (horizontal)
   roofWidthM: n(6, 0.5, 500), // up the slope
   roofAllowableLoadKgM2: n(25, 0, 1000),
+  windSpeedMs: n(28, 0, 80), // basic wind velocity vb (10-min mean at 10 m); ~40 m/s 3-s gust
+  attachmentCapacityKN: n(2, 0.1, 100), // design pull-out capacity of one roof hook / L-foot / anchor
+  // Lightning screening (IEC 62305-2)
+  groundFlashDensity: n(10, 0.1, 80), // Ng, flashes/km²/year (much of Nigeria 5–20)
+  buildingHeightM: n(4, 1, 300),
+  surroundings: z.enum(["surrounded_taller", "similar", "isolated", "hilltop"]).default("similar"),
+  overheadSupply: b(true), // building fed by an overhead line
   mountingWeightKgM2: n(3, 0, 100),
   roofCondition: z.enum(["good", "fair", "poor"]).default("good"),
   busbarRatingA: n(100, 0, 5000),
@@ -182,6 +196,7 @@ export const MOUNT_TYPES = ["auto", "flat", "ground", "gable", "shed"] as const;
 export const LayoutSchema = z.object({
   /** How the array is mounted; "auto" follows the site assessment (ground, flat below 5°, else gable). */
   mountType: z.enum(MOUNT_TYPES).default("auto"),
+  flatFixing: z.enum(["ballast", "anchored"]).default("ballast"), // flat roofs: ballast blocks or chemical anchors
   orientation: z.enum(["portrait", "landscape"]).default("portrait"),
   setbackM: n(0.5, 0, 5),
   gapM: n(0.02, 0, 1),
@@ -226,6 +241,54 @@ export const FinancialSchema = z.object({
   inverterLifeYears: n(10, 0, 40),
 });
 
+/* ---------- Commissioning & handover (after installation) ---------- */
+
+/** Measured at commissioning for one string (IEC 62446-1). 0 = not measured yet. */
+export const StringTestSchema = z.object({
+  vocV: n(0, 0, 2000),
+  iscA: n(0, 0, 100),
+  irradianceWm2: n(0, 0, 1500), // plane-of-array irradiance during the Isc test
+  cellTempC: n(0, -20, 100), // module temperature during the Voc test
+  polarityOk: b(false),
+  insulationMOhm: n(0, 0, 100000),
+});
+
+export const GridConnectionSchema = z.object({
+  connection: z.enum(["none", "backup", "export"]).default("backup"), // no grid, grid as backup/charging, or exporting
+  disco: s(), // electricity distribution company
+  accountNumber: s(),
+  meterNumber: s(),
+  exportLimitW: n(0, 0, 1e7),
+  applicationRef: s(),
+  steps: z.record(z.string(), b(false)).default({}),
+});
+
+export const WarrantyItemSchema = z.object({
+  id: id(),
+  item: s("Equipment"),
+  make: s(),
+  model: s(),
+  serial: s(),
+  quantity: n(1, 0, 10000),
+  warrantyYears: n(0, 0, 50),
+});
+
+export const HandoverSchema = z.object({
+  stringTests: z.record(z.string(), StringTestSchema).default({}),
+  earthOhm: n(0, 0, 10000),
+  rcdTripMs: n(0, 0, 5000), // trip time at the rated residual current IΔn
+  acVoltageV: n(0, 0, 1000),
+  functional: z.record(z.string(), b(false)).default({}),
+  testedBy: s(),
+  testDate: s(),
+  instrument: s(),
+  grid: GridConnectionSchema.prefault({}),
+  warranties: z.array(WarrantyItemSchema).max(200).default([]),
+  handoverDate: s(),
+  receivedBy: s(),
+  notes: s(),
+});
+
 export const STEP_KEYS = [
   "site",
   "loads",
@@ -241,6 +304,7 @@ export const STEP_KEYS = [
   "compliance",
   "boq",
   "financial",
+  "handover",
   "report",
 ] as const;
 export type StepKey = (typeof STEP_KEYS)[number];
@@ -262,6 +326,7 @@ export const SECTION_SCHEMAS = {
   compliance: ComplianceSchema,
   boq: BoqSchema,
   financial: FinancialSchema,
+  handover: HandoverSchema,
   progress: ProgressSchema,
 } as const;
 
@@ -286,6 +351,10 @@ export type Compliance = z.infer<typeof ComplianceSchema>;
 export type BoqExtra = z.infer<typeof BoqExtraSchema>;
 export type BoqSettings = z.infer<typeof BoqSchema>;
 export type FinancialSettings = z.infer<typeof FinancialSchema>;
+export type StringTest = z.infer<typeof StringTestSchema>;
+export type GridConnection = z.infer<typeof GridConnectionSchema>;
+export type WarrantyItem = z.infer<typeof WarrantyItemSchema>;
+export type Handover = z.infer<typeof HandoverSchema>;
 
 export interface DesignInputs {
   client: Client;
@@ -302,6 +371,7 @@ export interface DesignInputs {
   compliance: Compliance;
   boq: BoqSettings;
   financial: FinancialSettings;
+  handover: Handover;
   progress: Record<string, boolean>;
 }
 

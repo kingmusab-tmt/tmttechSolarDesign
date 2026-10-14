@@ -24,8 +24,8 @@ interface Poly {
 const MOUNT_LABEL: Record<MountType, string> = { flat: "Flat roof", ground: "Ground mount", gable: "Gable roof", shed: "Shed (mono-pitch) roof" };
 
 /** 3D view of the array on a flat roof, ground mount, gable roof or shed roof. */
-export const Array3dSvg = forwardRef<SVGSVGElement, { layout: LayoutResult; assessment: Assessment; settings: LayoutSettings; mount: MountType; tiltDeg: number; minSunAltitudeDeg: number; azimuthDeg: number }>(function Array3dSvg(
-  { layout, assessment, settings, mount, tiltDeg, minSunAltitudeDeg, azimuthDeg },
+export const Array3dSvg = forwardRef<SVGSVGElement, { layout: LayoutResult; assessment: Assessment; settings: LayoutSettings; mount: MountType; tiltDeg: number; minSunAltitudeDeg: number; azimuthDeg: number; rowPitchM?: number }>(function Array3dSvg(
+  { layout, assessment, settings, mount, tiltDeg, minSunAltitudeDeg, azimuthDeg, rowPitchM: enginePitch },
   ref,
 ) {
   const L = assessment.roofLengthM;
@@ -82,7 +82,7 @@ export const Array3dSvg = forwardRef<SVGSVGElement, { layout: LayoutResult; asse
   // Racks: rows tilted at beta, spaced so the front row does not shade the next at the lowest noon sun.
   const alt = (Math.max(10, minSunAltitudeDeg) * Math.PI) / 180;
   const shadeGap = (h * Math.sin(beta)) / Math.tan(alt);
-  const rowPitch = h * Math.cos(beta) + Math.max(settings.rowGapM, shadeGap);
+  const rowPitch = enginePitch ?? h * Math.cos(beta) + Math.max(settings.rowGapM, shadeGap);
   const rackDepth = 2 * sb + (rowsUsed - 1) * rowPitch + h * Math.cos(beta);
   const legBase = mount === "ground" ? 0.5 : 0.25;
 

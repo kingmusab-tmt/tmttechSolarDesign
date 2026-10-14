@@ -6,6 +6,7 @@ import { BATTERY_CHEMISTRIES, type BatterySettings } from "@/lib/schemas";
 import { Card, Field, Formula, NumInput, Select, Stat, TextInput } from "../ui";
 import { useProject } from "../project/ProjectProvider";
 import { EquipmentPicker, numericSpecs, useSection } from "./shared";
+import { YearSimCard } from "./YearSimCard";
 
 export function BatteryStep() {
   const { results, project } = useProject();
@@ -105,6 +106,7 @@ export function BatteryStep() {
           </Card>
         </div>
       </div>
+      {results.load.dailyWh > 0 && <YearSimCard sim={results.simulation} />}
     </div>
   );
 }

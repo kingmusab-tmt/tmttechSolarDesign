@@ -24,6 +24,7 @@ export const STEPS: StepMeta[] = [
   { key: "compliance", title: "Code Compliance", short: "Compliance", phase: "Engineering", description: "IEC 62446 / 60364-7-712, SON, NEMSA and COREN checklist with automatic verification." },
   { key: "boq", title: "Bill of Quantities", short: "BoQ", phase: "Deliverables", description: "Complete material list and costing, down to MC4 connectors and cable ties." },
   { key: "financial", title: "Financial Model", short: "Financials", phase: "Deliverables", description: "Payback, NPV, IRR and LCOE compared with the current grid and generator spend." },
+  { key: "handover", title: "Commissioning & Handover", short: "Handover", phase: "Deliverables", description: "Record the IEC 62446-1 test results, the grid connection paperwork, warranties and the maintenance plan for the client." },
   { key: "report", title: "Design Report", short: "Report", phase: "Deliverables", description: "Printable engineering report of the complete design." },
 ];
 
@@ -55,6 +56,7 @@ export function stepStatuses(d: DesignInputs, r: DesignResults): Record<StepKey,
     compliance: Object.values(d.compliance.items).some((i) => i.checked),
     boq: hasLoads,
     financial: hasLoads,
+    handover: Object.values(d.handover.stringTests).some((t) => t.vocV > 0 || t.iscA > 0) || d.handover.earthOhm > 0 || d.handover.warranties.length > 0,
     report: hasLoads,
   };
   const out = {} as Record<StepKey, StepState>;

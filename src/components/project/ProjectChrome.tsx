@@ -91,7 +91,7 @@ export function ProjectChrome({ children }: { children: ReactNode }) {
   return (
     <div className="mx-auto max-w-[1400px] px-4 sm:px-6">
       <div className="no-print flex flex-wrap items-center gap-3 border-b border-line py-4">
-        <button className="btn btn-sm lg:hidden" onClick={() => setNavOpen((v) => !v)} aria-expanded={navOpen}>
+        <button data-tour="steps-mobile" className="btn btn-sm lg:hidden" onClick={() => setNavOpen((v) => !v)} aria-expanded={navOpen}>
           ☰ Steps
         </button>
         <div className="min-w-0 flex-1">
@@ -103,7 +103,7 @@ export function ProjectChrome({ children }: { children: ReactNode }) {
             onChange={(e) => setMeta({ name: e.target.value || "Untitled project" })}
             aria-label="Project name"
           />
-          <div className={cx("px-1 text-xs", save.cls)} title={saveError}>
+          <div data-tour="save-status" className={cx("w-fit px-1 text-xs", save.cls)} title={saveError}>
             {save.text}
             {(saveState === "error" || saveState === "offline") && (
               <button className="ml-2 underline" onClick={() => void flush()}>
@@ -127,11 +127,11 @@ export function ProjectChrome({ children }: { children: ReactNode }) {
             </Link>
           )}
           {collab.isOwner && (
-            <button className="btn btn-sm" onClick={() => setSharing(true)}>
+            <button data-tour="share" className="btn btn-sm" onClick={() => setSharing(true)}>
               {collab.shared ? "Sharing" : "Share"}
             </button>
           )}
-          <div className="w-40">
+          <div data-tour="progress" className="w-40">
             <div className="mb-1 flex justify-between text-[11px] text-muted">
               <span>
                 {progress.completed}/{progress.total} complete
@@ -140,7 +140,7 @@ export function ProjectChrome({ children }: { children: ReactNode }) {
             </div>
             <ProgressBar pct={progress.pct} />
           </div>
-          <select className="input w-auto py-1.5" value={project.status} disabled={!collab.canManage} onChange={(e) => setMeta({ status: e.target.value as ProjectStatus })} aria-label="Project status">
+          <select data-tour="status" className="input w-auto py-1.5" value={project.status} disabled={!collab.canManage} onChange={(e) => setMeta({ status: e.target.value as ProjectStatus })} aria-label="Project status">
             {PROJECT_STATUSES.map((s) => (
               <option key={s} value={s}>
                 {STATUS_LABEL[s]}
@@ -157,7 +157,9 @@ export function ProjectChrome({ children }: { children: ReactNode }) {
               Close
             </button>
           )}
-          <div className="lg:sticky lg:top-20">{nav}</div>
+          <div data-tour="steps" className="lg:sticky lg:top-20">
+            {nav}
+          </div>
         </aside>
         <div className="min-w-0 flex-1">{children}</div>
         {sharing && <ShareDialog onClose={() => setSharing(false)} />}

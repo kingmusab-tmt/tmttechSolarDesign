@@ -11,6 +11,8 @@ const UserSchema = new Schema(
     company: { type: String, default: "", maxlength: 200 },
     /** "admin" can maintain the shared equipment library and manage users. */
     role: { type: String, enum: USER_ROLES, default: "user" },
+    /** Guided tours finished or skipped (see lib/tours.ts). */
+    toursDone: { type: [String], default: [] },
   },
   { timestamps: true },
 );
@@ -22,6 +24,7 @@ export interface UserDoc {
   passwordHash: string;
   company: string;
   role: UserRole;
+  toursDone?: string[];
   createdAt: Date;
   updatedAt: Date;
 }

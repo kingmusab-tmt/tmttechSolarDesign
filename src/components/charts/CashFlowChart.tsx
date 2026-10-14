@@ -84,17 +84,19 @@ export function CashFlowChart({ flows, capex, currency = "NGN" }: { flows: CashF
           </div>
         )}
       </div>
-      <table className="sr-only">
-        <caption>Cumulative cash position by year</caption>
-        <tbody>
-          {series.map((s) => (
-            <tr key={s.year}>
-              <th>Year {s.year}</th>
-              <td>{money(s.cumulative, currency)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div className="sr-only">
+        <table>
+          <caption>Cumulative cash position by year</caption>
+          <tbody>
+            {series.map((s) => (
+              <tr key={s.year}>
+                <th>Year {s.year}</th>
+                <td>{money(s.cumulative, currency)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </figure>
   );
 }

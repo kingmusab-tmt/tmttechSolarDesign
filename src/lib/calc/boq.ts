@@ -1,7 +1,11 @@
 import type { BatterySettings, BoqSettings, CableSettings, InverterSettings, PanelSpec, Site } from "../schemas";
 import type { CableResult } from "./cables";
+import { round } from "./constants";
 import type { LayoutResult } from "./site";
 import type { BatteryResult, ControllerResult, InverterResult, StringResult } from "./sizing";
+import type { DistributionResult } from "./distribution";
+import type { ProtectionResult } from "./protection";
+import type { StructureResult } from "./structure";
 
 export interface BoqItem {
   key: string;
@@ -53,10 +57,13 @@ interface BoqInputs {
   cables: CableResult;
   cableSettings: CableSettings;
   layout: LayoutResult;
+  structure: StructureResult;
+  distribution: DistributionResult;
+  protection: ProtectionResult;
 }
 
 export function computeBoq(x: BoqInputs): BoqResult {
-  const { boq, panel, inverter, inverterSettings, battery, batterySettings, strings, controller, cables, layout, site } = x;
+  const { boq, panel, inverter, inverterSettings, battery, batterySettings, strings, controller, cables, layout, site, structure: st, distribution, protection } = x;
   const items: BoqItem[] = [];
   const add = (key: string, category: string, description: string, unit: string, qty: number, unitPrice: number) => {
     const q = boq.qtyOverrides[key] ?? qty;
@@ -90,7 +97,14 @@ export function computeBoq(x: BoqInputs): BoqResult {
   add("rail_splice", "Mounting structure", "Rail splice kit", "pcs", layout.railSplices, 2500);
   add("mid_clamp", "Mounting structure", "Mid clamp (module-to-module)", "pcs", layout.midClamps, 1500);
   add("end_clamp", "Mounting structure", "End clamp", "pcs", layout.endClamps, 1500);
-  add("roof_hook", "Mounting structure", "Roof attachment (L-foot / hook) with EPDM seal", "pcs", layout.roofAttachments, 3500);
+  if (st.mount === "gable" || st.mount === "shed") add("roof_hook", "Mounting structure", "Roof attachment (L-foot / hook) with EPDM seal", "pcs", layout.roofAttachments, 3500);
+  if (st.racked) add("tilt_frame", "Mounting structure", `${st.mount === "ground" ? "Galvanised steel" : "Aluminium"} tilt frame ${round(st.tiltDeg, 0)}° (front + rear leg, brace)`, "pcs", st.frames, st.mount === "ground" ? 55000 : 45000);
+  if (st.mount === "flat" && st.ballastBlocks > 0) add("ballast", "Mounting structure", `Concrete ballast block 25 kg (${round(st.ballastKg, 0)} kg for wind uplift) + protection mat`, "pcs", st.ballastBlocks, 3500);
+  if (st.mount === "flat" && st.anchors > 0) add("roof_anchor", "Mounting structure", "Chemical anchor M10 with sealing washer", "pcs", st.anchors, 4500);
+  if (st.mount === "ground") {
+    add("ground_post", "Mounting structure", "Galvanised steel post 80 × 80 mm", "pcs", st.posts, 30000);
+    add("footing_concrete", "Mounting structure", `Concrete for post footings (${st.footings} × 300 × 300 × ${Math.round(st.footingDepthM * 1000)} mm)`, "m³", Math.ceil(st.concreteM3 * 10) / 10, 120000);
+  }
   add("earth_clip", "Mounting structure", "Module earthing clip / WEEB", "pcs", nPanels, 800);
 
   // DC cabling & protection
@@ -110,7 +124,7 @@ export function computeBoq(x: BoqInputs): BoqResult {
   if (cc) add("cable_ctrl_batt", "DC cabling & protection", `Controller–battery cable ${cc.sizeMm2} mm² (red + black)`, "m", Math.ceil(2 * cc.lengthM * cc.runs * 1.1), cablePricePerM(cc.sizeMm2));
   if (cc) add("ctrl_breaker", "DC cabling & protection", `DC breaker ${cc.protectionA} A (controller output)`, "pcs", cc.runs, 20000);
   if (battSeg) add("cable_batt_inv", "DC cabling & protection", `Battery cable ${battSeg.sizeMm2} mm² flexible (red + black)`, "m", Math.ceil(2 * battSeg.lengthM * 1.1), cablePricePerM(battSeg.sizeMm2));
-  add("battery_fuse", "DC cabling & protection", `Battery fuse ${cables.batteryFuseA} A (Class T / NH) with holder`, "pcs", 1, 45000);
+  add("battery_fuse", "DC cabling & protection", `Battery protection: ${protection.batteryDevice}, with holder`, "pcs", 1, protection.batteryBreakingKA >= 100 ? 60000 : 45000);
   add("battery_isolator", "DC cabling & protection", `Battery isolator switch ≥ ${cables.batteryFuseA} A`, "pcs", 1, 30000);
 
   // AC cabling & protection
@@ -119,9 +133,14 @@ export function computeBoq(x: BoqInputs): BoqResult {
   const acIn = seg("ac_in");
   if (acIn) add("cable_ac_in", "AC cabling & protection", `AC input cable ${acIn.sizeMm2} mm² 3-core`, "m", Math.ceil(acIn.lengthM * 1.1), 3 * cablePricePerM(acIn.sizeMm2));
   add("ac_breaker", "AC cabling & protection", `Double-pole MCB ${cables.acBreakerA} A`, "pcs", site.gridAvailable ? 2 : 1, 12000);
-  add("ac_spd", "AC cabling & protection", cables.acSpd, "pcs", 1, 30000);
+  add("ac_spd", "AC cabling & protection", `AC SPD: ${protection.lightning.acSpd}`, "pcs", 1, protection.lightning.acSpd.startsWith("Type 1") ? 65000 : 30000);
+  if (protection.lightning.lps) add("lps", "Earthing & lightning", "External lightning protection system to IEC 62305-3 (air terminals, down conductors, test joints, earth termination)", "lot", 1, 450000);
   if (site.gridAvailable && controller.applicable) add("changeover", "AC cabling & protection", `Changeover switch ${cables.acBreakerA} A`, "pcs", 1, 45000);
-  add("ac_db", "AC cabling & protection", "Solar distribution board / enclosure (IP65)", "pcs", 1, 40000);
+  add("ac_db", "AC cabling & protection", `Essential-loads distribution board, ${distribution.boardWays}-way (IP65)`, "pcs", 1, 40000 + 2500 * Math.max(0, distribution.boardWays - 8));
+  // One RCBO per final circuit, grouped by rating.
+  const rcbos = new Map<string, number>();
+  for (const c of distribution.circuits) rcbos.set(`${c.mcbA} A ${c.curve}`, (rcbos.get(`${c.mcbA} A ${c.curve}`) ?? 0) + 1);
+  for (const [rating, qty] of rcbos) add(`rcbo_${rating.replace(/\W+/g, "_")}`, "AC cabling & protection", `RCBO ${rating}-curve, 30 mA Type A (final circuits)`, "pcs", qty, 18000);
 
   // Earthing & lightning
   add("earth_rod", "Earthing & lightning", cables.earthing.electrode, "pcs", 2, 18000);

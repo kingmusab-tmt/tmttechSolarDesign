@@ -10,6 +10,7 @@ export function AssessmentStep() {
   const { results } = useProject();
   const [a, setA] = useSection("assessment");
   const S = results.site;
+  const LP = results.protection.lightning;
   const setObs = (id: string, patch: Partial<Obstruction>) => setA({ obstructions: a.obstructions.map((o) => (o.id === id ? { ...o, ...patch } : o)) });
 
   return (
@@ -138,7 +139,41 @@ export function AssessmentStep() {
             <Field label="Mounting system weight">
               <NumInput value={a.mountingWeightKgM2} min={0} onChange={(mountingWeightKgM2) => setA({ mountingWeightKgM2 })} suffix="kg/m²" />
             </Field>
+            <Field label="Basic wind speed (vb)" hint="10-minute mean at 10 m; about 25–30 m/s across most of Nigeria. Use the local code value.">
+              <NumInput value={a.windSpeedMs} min={0} max={80} onChange={(windSpeedMs) => setA({ windSpeedMs })} suffix="m/s" />
+            </Field>
+            <Field label="Fixing capacity (per hook / anchor)" hint="Design pull-out capacity from the racking supplier for this roof structure">
+              <NumInput value={a.attachmentCapacityKN} min={0.1} step={0.1} onChange={(attachmentCapacityKN) => setA({ attachmentCapacityKN })} suffix="kN" />
+            </Field>
           </div>
+        </Card>
+        <Card title="Lightning risk (IEC 62305-2 screening)" subtitle={`Nd = ${LP.ng} × ${fmt(LP.adM2)} m² × ${LP.cd} × 10⁻⁶ = ${LP.nd.toExponential(1)} direct strikes per year (${LP.level})`}>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Ground flash density Ng" hint="Flashes/km²/year from a lightning map; 5–20 across Nigeria">
+              <NumInput value={a.groundFlashDensity} min={0.1} max={80} step={0.5} onChange={(groundFlashDensity) => setA({ groundFlashDensity })} suffix="/km²/yr" />
+            </Field>
+            <Field label="Building height">
+              <NumInput value={a.buildingHeightM} min={1} max={300} step={0.5} onChange={(buildingHeightM) => setA({ buildingHeightM })} suffix="m" />
+            </Field>
+            <Field label="Surroundings">
+              <Select
+                value={a.surroundings}
+                onChange={(surroundings) => setA({ surroundings })}
+                options={[
+                  { value: "surrounded_taller", label: "Surrounded by taller buildings or trees" },
+                  { value: "similar", label: "Among buildings of similar height" },
+                  { value: "isolated", label: "Isolated, nothing nearby" },
+                  { value: "hilltop", label: "Isolated on a hilltop" },
+                ]}
+              />
+            </Field>
+            <label className="flex items-center gap-2 self-end pb-2 text-sm">
+              <input type="checkbox" className="h-4 w-4 accent-[var(--accent)]" checked={a.overheadSupply} onChange={(e) => setA({ overheadSupply: e.target.checked })} />
+              Supplied by an overhead line
+            </label>
+          </div>
+          <p className={`mt-4 rounded-lg px-3 py-2 text-sm ${LP.lps ? "bg-warn-soft text-warn" : "bg-surface-2"}`}>{LP.advice}</p>
+          <p className="mt-2 text-xs text-muted">AC surge protection: {LP.acSpd}.</p>
         </Card>
         <Card title="Existing electrical infrastructure" subtitle="Main panel capacity for a safe interconnection">
           <div className="grid gap-4 sm:grid-cols-2">

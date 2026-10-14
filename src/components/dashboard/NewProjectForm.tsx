@@ -1,5 +1,6 @@
 "use client";
 
+import { STEPS } from "@/lib/steps";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { LOCATIONS } from "@/lib/locations";
@@ -36,7 +37,7 @@ export function NewProjectForm() {
     <form onSubmit={create} className="card space-y-4 p-5">
       <div>
         <h2 className="font-semibold">New design project</h2>
-        <p className="text-xs text-muted">Every design follows the 15-step engineering workflow.</p>
+        <p className="text-xs text-muted">Every design follows the {STEPS.length}-step engineering workflow.</p>
       </div>
       <label className="block">
         <span className="label">Project name</span>

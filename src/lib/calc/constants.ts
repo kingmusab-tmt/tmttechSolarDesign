@@ -38,6 +38,27 @@ export const CABLE_TABLE: { size: number; ampacity: number }[] = [
   { size: 300, ampacity: 693 },
 ];
 
+/** Installation method factor relative to the reference method C table above (IEC 60364-5-52, XLPE, 2 loaded conductors). */
+export const INSTALL_METHOD = {
+  air: { factor: 1.08, label: "Free air / cable tray (method E)" },
+  clipped: { factor: 1.0, label: "Clipped direct to a surface (method C)" },
+  conduit: { factor: 0.89, label: "In conduit or trunking on a wall (method B)" },
+  insulated: { factor: 0.78, label: "In conduit in a thermally insulated wall/roof (method A)" },
+} as const;
+
+/** Grouping factor for circuits bunched together (IEC 60364-5-52 Table B.52.17, item 1). */
+export function groupingFactor(circuits: number) {
+  const t: [number, number][] = [[1, 1], [2, 0.8], [3, 0.7], [4, 0.65], [5, 0.6], [6, 0.57], [7, 0.54], [8, 0.52], [9, 0.5], [12, 0.45], [16, 0.41], [20, 0.38]];
+  let f = 1;
+  for (const [n, k] of t) if (circuits >= n) f = k;
+  return f;
+}
+
+/** Ambient temperature factor: Iz scales with √(allowed temperature rise); table basis is 30 °C ambient, 90 °C conductor. */
+export function ambientFactor(ambientC: number, conductorMaxC: number) {
+  return ambientC >= conductorMaxC ? 0 : Math.sqrt((conductorMaxC - ambientC) / (90 - 30));
+}
+
 export const CHEMISTRY_INFO = {
   lead_acid: { label: "Flooded lead-acid", dod: 0.5, maxChargeC: 0.15, maxDischargeC: 0.2, lifeYears: 3, cycleLife: 500 },
   gel: { label: "Gel (VRLA)", dod: 0.5, maxChargeC: 0.15, maxDischargeC: 0.2, lifeYears: 5, cycleLife: 1000 },

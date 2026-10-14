@@ -25,6 +25,7 @@ const ProjectSchema = new Schema(
     layout: { type: Mixed, default: {} },
     compliance: { type: Mixed, default: {} },
     boq: { type: Mixed, default: {} },
+    handover: { type: Mixed, default: {} },
     financial: { type: Mixed, default: {} },
     progress: { type: Mixed, default: {} },
     /** Shared with this organisation (null = personal project). */

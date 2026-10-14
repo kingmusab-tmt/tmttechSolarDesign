@@ -38,7 +38,7 @@ export function ThemeToggle({ withLabel = false, className }: { withLabel?: bool
 
   const label = theme === "dark" ? "Switch to light mode" : "Switch to dark mode";
   return (
-    <button type="button" onClick={toggle} aria-label={label} title={label} className={cx("flex items-center justify-center gap-2 rounded-lg border border-line bg-surface text-muted hover:bg-surface-2 hover:text-text", withLabel ? "h-10 px-3 text-sm" : "h-10 w-10 lg:h-9 lg:w-9", className)}>
+    <button type="button" data-tour="theme" onClick={toggle} aria-label={label} title={label} className={cx("flex items-center justify-center gap-2 rounded-lg border border-line bg-surface text-muted hover:bg-surface-2 hover:text-text", withLabel ? "h-10 px-3 text-sm" : "h-10 w-10 lg:h-9 lg:w-9", className)}>
       <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         {theme === "dark" ? (
           <>

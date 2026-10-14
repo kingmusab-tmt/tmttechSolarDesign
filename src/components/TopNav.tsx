@@ -8,6 +8,7 @@ import { LogoutButton } from "./LogoutButton";
 import { Logo } from "./Logo";
 import { MobileNav, type NavLink } from "./MobileNav";
 import { ThemeToggle } from "./ThemeToggle";
+import { HelpButton } from "./Tour";
 
 const LINK = "rounded-md px-2.5 py-1.5 whitespace-nowrap text-muted hover:bg-surface-2 hover:text-text";
 
@@ -48,7 +49,7 @@ export async function TopNav() {
         </Link>
 
         {/* Desktop / tablet: inline links */}
-        <nav className="hidden min-w-0 flex-1 items-center gap-1 text-sm lg:flex">
+        <nav data-tour="nav" className="hidden min-w-0 flex-1 items-center gap-1 text-sm lg:flex">
           {links.map((l) => (
             <Link key={l.href} className={`${LINK} ${l.accent ? "font-medium text-accent-strong" : ""}`} href={l.href}>
               {l.label}
@@ -57,6 +58,7 @@ export async function TopNav() {
           ))}
         </nav>
         <div className="hidden shrink-0 items-center gap-3 text-sm lg:flex">
+          {session && <HelpButton />}
           <ThemeToggle />
           {session ? (
             <>
@@ -79,6 +81,7 @@ export async function TopNav() {
 
         {/* Phones: hamburger menu */}
         <div className="ml-auto flex items-center gap-2 lg:hidden">
+          {session && <HelpButton />}
           <ThemeToggle />
           <MobileNav links={links} userName={session?.name} signedIn={Boolean(session)} />
         </div>

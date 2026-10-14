@@ -24,6 +24,18 @@ A Next.js + MongoDB progressive web app that guides you through the full enginee
 - **Admin console (`/admin`):** administrators add, edit, verify, retire and restore items in the shared equipment library (with datasheet links), promote users and view usage. Admin edits survive future seed updates.
 - **PWA:** installable; the app shell and quick calculator work offline. Edits made offline are kept on the device (even if the tab is closed) and sync when you reconnect.
 
+### Engineering depth
+
+- **Cable derating** (IEC 60364-5-52): ambient temperature (roof cables at 70 °C, EN 50618 PV cable at 120 °C, XLPE at 90 °C), grouping and installation method; every cable is checked for Iz ≥ In.
+- **Mounting structure & wind** (simplified EN 1991-1-4): flush roof hooks, ballasted or anchored flat-roof tilt frames, ground-mount posts and footings; shade-free row spacing; racking items in the BoQ.
+- **Year-round simulation**: hour-by-hour battery state of charge over a typical year with seasonal sun and day-to-day weather; shortfall days and backup energy.
+- **Fault level & lightning**: battery short-circuit current and fuse breaking capacity, inverter-fed fault behaviour, IEC 62305-2 lightning screening with SPD class and LPS recommendation.
+- **Installation schedules**: essential-loads distribution board (final circuits, RCBOs, cables), tagged cable schedule and string wiring plan.
+- **Commissioning & handover**: IEC 62446-1 test sheets (Voc/Isc against corrected expected values, polarity, insulation, earth, RCD), grid-connection checklist and settings, warranty register, maintenance plan and handover record, all in the report.
+- **Design readiness**: flags generic equipment, default prices, preset climate data and missing engineer/COREN details before a design is issued.
+
+The calculations support an engineer's design; a COREN-registered engineer must review and sign it off, and racking fixings and foundations should be confirmed with the supplier.
+
 ## Getting started
 
 ```bash

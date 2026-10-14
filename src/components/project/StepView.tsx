@@ -12,6 +12,7 @@ import { CablesStep } from "../steps/CablesStep";
 import { ComplianceStep } from "../steps/ComplianceStep";
 import { ControllerStep } from "../steps/ControllerStep";
 import { FinancialStep } from "../steps/FinancialStep";
+import { HandoverStep } from "../steps/HandoverStep";
 import { InverterStep } from "../steps/InverterStep";
 import { LayoutStep } from "../steps/LayoutStep";
 import { LoadsStep } from "../steps/LoadsStep";
@@ -39,6 +40,7 @@ const COMPONENTS: Record<StepKey, ComponentType> = {
   compliance: ComplianceStep,
   boq: BoqStep,
   financial: FinancialStep,
+  handover: HandoverStep,
   report: ReportStep,
 };
 
@@ -100,9 +102,11 @@ export function StepView({ stepKey }: { stepKey: StepKey }) {
       <ProposalBar step={stepKey} />
 
       {stepKey !== "report" && checks.length > 0 && (
-        <Card title="Design checks" subtitle="Verified automatically against the current inputs" className="no-print">
-          <CheckList checks={checks} />
-        </Card>
+        <div data-tour="checks">
+          <Card title="Design checks" subtitle="Verified automatically against the current inputs" className="no-print">
+            <CheckList checks={checks} />
+          </Card>
+        </div>
       )}
 
       <div className="no-print flex flex-wrap items-center justify-between gap-3 border-t border-line pt-5">
@@ -115,13 +119,13 @@ export function StepView({ stepKey }: { stepKey: StepKey }) {
             ← Overview
           </Link>
         )}
-        <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2 text-sm font-medium">
+        <label data-tour="complete" className="flex cursor-pointer items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2 text-sm font-medium">
           <input type="checkbox" className="h-4 w-4 accent-[var(--good)]" checked={state.status === "complete"} onChange={(e) => toggleComplete(stepKey, e.target.checked)} />
           Mark step as reviewed &amp; complete
           {state.fails > 0 && <span className="text-xs font-normal text-bad">({state.fails} failing check{state.fails > 1 ? "s" : ""})</span>}
         </label>
         {next ? (
-          <Link className="btn btn-primary" href={`${base}/${next.key}`}>
+          <Link data-tour="next" className="btn btn-primary" href={`${base}/${next.key}`}>
             {next.title} →
           </Link>
         ) : (

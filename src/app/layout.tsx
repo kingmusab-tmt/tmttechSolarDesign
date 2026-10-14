@@ -4,6 +4,7 @@ import { TopNav } from "@/components/TopNav";
 import { APP_NAME, APP_SHORT_NAME, COMPANY } from "@/lib/brand";
 import { KEYWORDS, SITE_DESCRIPTION, SITE_URL } from "@/lib/seo";
 import { RegisterSW } from "@/components/RegisterSW";
+import { TourHost } from "@/components/Tour";
 import { VisitBeacon } from "@/components/VisitBeacon";
 import "./globals.css";
 
@@ -59,6 +60,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <SiteFooter />
         <RegisterSW />
         <VisitBeacon />
+        <TourHost />
       </body>
     </html>
   );

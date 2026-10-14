@@ -19,6 +19,7 @@ export const STEP_SECTIONS: Record<StepKey, SectionKey[]> = {
   compliance: ["compliance"],
   boq: ["boq"],
   financial: ["financial"],
+  handover: ["handover"],
   report: [],
 };
 
@@ -37,6 +38,7 @@ export const SECTION_LABELS: Record<SectionKey, string> = {
   compliance: "Compliance",
   boq: "Bill of Quantities",
   financial: "Financial model",
+  handover: "Commissioning & handover",
   progress: "Progress",
 };
 
