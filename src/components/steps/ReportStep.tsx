@@ -6,6 +6,7 @@ import { COMPLIANCE_ITEMS } from "@/lib/compliance";
 import { fmt, money } from "@/lib/format";
 import { STEPS } from "@/lib/steps";
 import { resolveMount } from "@/lib/calc/site";
+import { nipostLine } from "@/lib/postcode";
 import { Array3dSvg } from "../diagrams/Array3dSvg";
 import { ArrayLayoutSvg } from "../diagrams/ArrayLayoutSvg";
 import { SldDiagram, SldStyleSwitch, useSldStyle } from "../diagrams/SldDiagram";
@@ -107,6 +108,7 @@ export function ReportStep() {
             <p className="mt-1 text-sm text-muted">
               {p.client.name && `${p.client.name} · `}
               {p.client.address || `${p.site.city}, ${p.site.state}`}
+              {p.site.locationMethod === "nipost" && p.site.nipost.postcode && ` · NIPOST ${p.site.nipost.postcode}`}
             </p>
           </div>
           <div className="text-right text-sm">
@@ -147,6 +149,7 @@ export function ReportStep() {
           <T
             rows={[
               ["Location", `${p.site.city}, ${p.site.state}, ${p.site.country} (${p.site.latitude}°, ${p.site.longitude}°)`],
+              ...(p.site.locationMethod === "nipost" && p.site.nipost.postcode ? [["NIPOST postcode", nipostLine(p.site)]] : []),
               ["Peak sun hours", `${p.site.peakSunHours} h/day (${p.site.climateSource})`],
               ...(p.site.monthlyPsh.length === 12 ? [["Monthly PSH (Jan–Dec)", p.site.monthlyPsh.map((v) => v.toFixed(1)).join(" · ")]] : []),
               ["Design temperatures", `Tmin ${p.site.tMin} °C · Tmax ${p.site.tMax} °C`],

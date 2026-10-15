@@ -43,11 +43,15 @@ export default async function Home() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd() }} />
       <section className="grid items-center gap-10 lg:grid-cols-[1.1fr_0.9fr]">
         <div>
-          <span className="inline-block rounded-full bg-accent-soft px-3 py-1 text-xs font-semibold text-accent-strong">Progressive web app · works offline</span>
+          <span className="inline-block rounded-full bg-accent-soft px-3 py-1 text-xs font-semibold text-accent-strong">Built on Nigeria&apos;s digital postcodes · NASA solar data for best accuracy</span>
           <h1 className="mt-4 text-4xl font-bold tracking-tight sm:text-5xl">Design solar home systems the way engineers do.</h1>
           <p className="mt-4 text-lg text-muted">
             A guided, sequential workflow from the load audit to a signed-off design: inverter, battery, PV and charge-controller sizing, temperature-corrected string design, cable and protection sizing, single-line diagrams, roof
             layouts, compliance, Bill of Quantities and financial modelling, with progress tracked on every project.
+          </p>
+          <p className="mt-3 text-muted">
+            Every site is captured by its NIPOST digital postcode, which identifies the exact building the system is designed for. The building&apos;s precise location, matched to its NIPOST postcode, then drives the solar irradiance, temperature and sun-angle
+            data, so each design is based on the real installation site rather than the nearest city.
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
             <Link href="/register" className="btn btn-primary px-5 py-2.5">

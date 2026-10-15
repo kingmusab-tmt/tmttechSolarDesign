@@ -53,7 +53,7 @@ export function SiteFooter() {
         <div className="space-y-2">
           <h2 className="text-xs font-semibold tracking-wide text-muted uppercase">Data & credits</h2>
           <p className="text-muted">
-            Climate data: NASA POWER (NASA Langley Research Center) and Global Solar Atlas 2.0 (World Bank Group, Solargis, ESMAP). PV module data: California Energy Commission list via NREL System Advisor Model.
+            Site location: NIPOST digital postcodes (Nigerian Postal Service). Maps: Esri World Imagery and © OpenStreetMap contributors. Climate data: NASA POWER (NASA Langley Research Center) and Global Solar Atlas 2.0 (World Bank Group, Solargis, ESMAP). PV module data: California Energy Commission list via NREL System Advisor Model.
           </p>
           <Link href="/credits" className={`font-medium ${A}`}>
             Full attributions and licences →

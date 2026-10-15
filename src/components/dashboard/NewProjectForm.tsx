@@ -9,7 +9,7 @@ export function NewProjectForm() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [clientName, setClientName] = useState("");
-  const [locationPreset, setLocation] = useState("lagos");
+  const [locationPreset, setLocation] = useState("nipost");
   const [withSample, setWithSample] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -50,6 +50,7 @@ export function NewProjectForm() {
       <label className="block">
         <span className="label">Location</span>
         <select className="input" value={locationPreset} onChange={(e) => setLocation(e.target.value)}>
+          <option value="nipost">NIPOST digital postcode: pin the exact building next</option>
           {LOCATIONS.map((l) => (
             <option key={l.key} value={l.key}>
               {l.city}, {l.state} ({l.peakSunHours} PSH)

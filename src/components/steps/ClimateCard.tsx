@@ -12,6 +12,31 @@ type Detail = Site["climateDetail"];
 const DAYS = [31, 28.25, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 const round2 = (v: number) => Math.round(v * 100) / 100;
 
+/** Recombine the climate sources into a site patch with the automatic design basis. */
+export function climatePatch(site: Site, next: Detail, extra: Partial<Site> = {}): Partial<Site> {
+  const hasAny = next.gsaPsh.length === 12 || next.nasaPsh.length === 12;
+  if (!hasAny) return { ...extra, monthlyPsh: [], climateSource: "Location preset", climateDetail: { ...next, method: "none", disagreeMonths: [] } };
+  const c = combineClimate(next.gsaPsh, next.nasaPsh);
+  const lat = extra.latitude ?? site.latitude;
+  const lon = extra.longitude ?? site.longitude;
+  // Off-grid systems must survive the worst month; with grid/generator backup the annual average right-sizes the array.
+  const gridAvailable = extra.gridAvailable ?? site.gridAvailable;
+  return {
+    ...extra,
+    monthlyPsh: c.monthlyPsh,
+    peakSunHours: gridAvailable ? c.annualPsh : c.worstMonth.value,
+    climateSource: `${c.source} · ${lat}°, ${lon}°`,
+    climateDetail: { ...next, method: c.method, disagreeMonths: c.disagreeMonths, fetchedAt: new Date().toISOString() },
+  };
+}
+
+export async function fetchNasaClimate(lat: number, lon: number): Promise<NasaClimate> {
+  const res = await fetch(`/api/climate?lat=${lat}&lon=${lon}`);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Could not fetch NASA POWER data");
+  return data.nasa as NasaClimate;
+}
+
 /**
  * Site climate: NASA POWER is fetched automatically; Global Solar Atlas values are entered by the
  * engineer (its terms forbid automated access). When both exist, each month is their average.
@@ -30,31 +55,14 @@ export function ClimateCard() {
 
   /** Recombine the sources and apply the automatic design basis. */
   function apply(next: Detail, extra: Partial<Site> = {}) {
-    const hasAny = next.gsaPsh.length === 12 || next.nasaPsh.length === 12;
-    if (!hasAny) {
-      setSite({ ...extra, monthlyPsh: [], climateSource: "Location preset", climateDetail: { ...next, method: "none", disagreeMonths: [] } });
-      return;
-    }
-    const c = combineClimate(next.gsaPsh, next.nasaPsh);
-    // Off-grid systems must survive the worst month; with grid/generator backup the annual average right-sizes the array.
-    const gridAvailable = extra.gridAvailable ?? site.gridAvailable;
-    setSite({
-      ...extra,
-      monthlyPsh: c.monthlyPsh,
-      peakSunHours: gridAvailable ? c.annualPsh : c.worstMonth.value,
-      climateSource: `${c.source} · ${site.latitude}°, ${site.longitude}°`,
-      climateDetail: { ...next, method: c.method, disagreeMonths: c.disagreeMonths, fetchedAt: new Date().toISOString() },
-    });
+    setSite(climatePatch(site, next, extra));
   }
 
   async function fetchNasa() {
     setFetching(true);
     setError("");
     try {
-      const res = await fetch(`/api/climate?lat=${site.latitude}&lon=${site.longitude}`);
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || "Could not fetch NASA POWER data");
-      const n = data.nasa as NasaClimate;
+      const n = await fetchNasaClimate(site.latitude, site.longitude);
       apply({ ...detail, nasaPsh: n.monthlyPsh }, { tMin: n.tMin, tMax: n.tMax });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not fetch NASA POWER data");

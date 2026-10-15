@@ -17,11 +17,34 @@ export const COMPANY = {
 /** Third-party data the app uses, with the attribution each provider asks for. */
 export const DATA_CREDITS = [
   {
+    name: "NIPOST Digital Postcode",
+    url: "https://postcode.gov.ng/",
+    use: "Nigeria's national digital postcodes, which identify the exact building each system is designed for and locate the installation site.",
+    attribution:
+      "Postcode data and services provided by the Nigerian Postal Service (NIPOST) through the NIPOST Postcode API. Postcode codes, structures and the postcode database are owned by NIPOST or its licensors. NIPOST names, logos and trademarks belong to NIPOST; their mention here does not imply endorsement by NIPOST.",
+    license: { label: "NIPOST Terms and Conditions and Acceptable Use Policy (limited, non-exclusive, revocable licence)", url: "https://postcode.gov.ng/terms" },
+  },
+  {
+    name: "Esri World Imagery",
+    url: "https://www.arcgis.com/home/item.html?id=10df2279f9684e4a9f6a7f08febac2a9",
+    use: "Satellite imagery on the site map, used to pin the client's building and view the roof.",
+    attribution: "Imagery © Esri, Maxar, Earthstar Geographics and the GIS User Community. Credited on the map itself as Esri requires.",
+    license: { label: "Esri Master Agreement and ArcGIS terms of use", url: "https://www.esri.com/en-us/legal/terms/full-master-agreement" },
+  },
+  {
+    name: "OpenStreetMap",
+    url: "https://www.openstreetmap.org/",
+    use: "Street map layer on the site map, and place search (Nominatim) to open the map on the postcode's local government area.",
+    attribution: "Map data © OpenStreetMap contributors. Place search by Nominatim, used within the OpenStreetMap Foundation usage policies (identified, rate-limited and cached).",
+    license: { label: "Open Data Commons Open Database License (ODbL)", url: "https://www.openstreetmap.org/copyright" },
+  },
+  {
     name: "NASA POWER",
     url: "https://power.larc.nasa.gov/",
-    use: "Monthly solar irradiance, temperature and record temperature data, fetched automatically for each site.",
+    use: "Monthly solar irradiance, temperature and record temperature data, fetched automatically for each site's coordinates.",
     attribution:
-      "These data were obtained from the NASA Langley Research Center (LaRC) POWER Project funded through the NASA Earth Science/Applied Science Program.",
+      "These data were obtained from the NASA Langley Research Center (LaRC) POWER Project funded through the NASA Earth Science/Applied Science Program. NASA does not endorse this app.",
+    license: { label: "Open data, free of copyright restrictions under the NASA Earth Science data policy; acknowledgement requested", url: "https://power.larc.nasa.gov/docs/referencing/" },
   },
   {
     name: "Global Solar Atlas 2.0",
@@ -29,6 +52,7 @@ export const DATA_CREDITS = [
     use: "Irradiance, PV output and optimum tilt values that engineers look up and enter themselves (the app does not access the site automatically).",
     attribution:
       "Global Solar Atlas 2.0, a free, web-based application, is developed and operated by the company Solargis s.r.o. on behalf of the World Bank Group, utilizing Solargis data, with funding provided by the Energy Sector Management Assistance Program (ESMAP). Data licensed under CC BY 4.0.",
+    license: { label: "Creative Commons Attribution 4.0 International (CC BY 4.0)", url: "https://creativecommons.org/licenses/by/4.0/" },
   },
   {
     name: "CEC PV module list via NREL System Advisor Model (SAM)",
@@ -36,6 +60,7 @@ export const DATA_CREDITS = [
     use: "Electrical and temperature data for 21,677 certified PV modules in the module search.",
     attribution:
       "Module data from the California Energy Commission (CEC) list of eligible PV modules, as distributed in the NREL System Advisor Model libraries. Copyright © Alliance for Sustainable Energy, LLC. Used under the BSD 3-Clause License (full text below).",
+    license: { label: "BSD 3-Clause License", url: "https://github.com/NREL/SAM/blob/develop/LICENSE" },
   },
   {
     name: "Manufacturer datasheets",
@@ -43,6 +68,7 @@ export const DATA_CREDITS = [
     use: "Specifications of the verified inverters, batteries, charge controllers and modules in the built-in library.",
     attribution:
       "Values transcribed from each manufacturer's published datasheet, linked on every item. Product names and trademarks belong to their respective owners; their use here does not imply endorsement.",
+    license: { label: "Copyright of each manufacturer; cited for specification purposes only", url: "" },
   },
 ] as const;
 
@@ -56,6 +82,7 @@ export const SOFTWARE_CREDITS = [
   { name: "Zod", license: "MIT", url: "https://zod.dev/" },
   { name: "jose", license: "MIT", url: "https://github.com/panva/jose" },
   { name: "bcrypt.js", license: "BSD-3-Clause", url: "https://github.com/dcodeIO/bcrypt.js" },
+  { name: "Leaflet", license: "BSD-2-Clause", url: "https://leafletjs.com/" },
 ] as const;
 
 export const BSD_3_CLAUSE = `Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:

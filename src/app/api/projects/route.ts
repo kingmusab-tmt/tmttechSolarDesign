@@ -25,6 +25,8 @@ export const POST = handler(async (req, _ctx, session) => {
   if (clientName) d.client.name = clientName;
   const loc = locationPreset ? findLocation(locationPreset) : undefined;
   if (loc) d.site = { ...d.site, locationPreset: loc.key, city: loc.city, state: loc.state, latitude: loc.latitude, longitude: loc.longitude, peakSunHours: loc.peakSunHours, tMin: loc.tMin, tMax: loc.tMax };
+  // NIPOST: the building is identified and pinned in Project & Site; the default climate stays as a provisional placeholder.
+  if (locationPreset === "nipost") d.site = { ...d.site, locationMethod: "nipost", locationPreset: "custom", city: "", state: "" };
   if (withSample) d.loads = sampleLoads();
   const doc = await Project.create({ ...d, owner: session.userId, name, status: "draft" });
   return json({ project: normalizeProject(doc.toObject() as unknown as Record<string, unknown>) }, 201);

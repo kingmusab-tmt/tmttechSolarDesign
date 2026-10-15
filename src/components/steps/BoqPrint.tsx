@@ -51,6 +51,7 @@ export function BoqPrintSheet({ project, boq }: { project: ProjectData; boq: Boq
           <div>
             {project.client.name && `${project.client.name} · `}
             {project.client.address || [project.site.city, project.site.state].filter(Boolean).join(", ")}
+            {project.site.locationMethod === "nipost" && project.site.nipost.postcode && ` · NIPOST postcode ${project.site.nipost.postcode}`}
           </div>
         </div>
         <div className="text-right">

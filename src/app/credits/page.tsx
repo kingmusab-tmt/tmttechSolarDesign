@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { publicPage } from "@/lib/seo";
 import { APP_NAME, BSD_3_CLAUSE, COMPANY, DATA_CREDITS, SOFTWARE_CREDITS } from "@/lib/brand";
 
-export const metadata: Metadata = publicPage("/credits", "Credits and attributions", "Data sources, licences and open-source software behind the solar design app: NASA POWER, Global Solar Atlas, the CEC module list via NREL SAM, and more.");
+export const metadata: Metadata = publicPage("/credits", "Credits and attributions", "Data sources, licences and open-source software behind the solar design app: NIPOST digital postcodes, NASA POWER, Global Solar Atlas, the CEC module list via NREL SAM, and more.");
 
 export default function CreditsPage() {
   return (
@@ -33,6 +33,16 @@ export default function CreditsPage() {
             </h3>
             <p className="text-muted">{d.use}</p>
             <p>{d.attribution}</p>
+            <p className="text-xs text-muted">
+              <span className="font-medium">Licence:</span>{" "}
+              {d.license.url ? (
+                <a className="underline underline-offset-2 hover:text-accent-strong" href={d.license.url} target="_blank" rel="noopener noreferrer">
+                  {d.license.label}
+                </a>
+              ) : (
+                d.license.label
+              )}
+            </p>
           </div>
         ))}
       </section>

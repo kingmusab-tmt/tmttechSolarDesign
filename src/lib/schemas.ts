@@ -21,7 +21,11 @@ export const ClientSchema = z.object({
   address: s(),
 });
 
+export const LOCATION_METHODS = ["preset", "nipost"] as const;
+
 export const SiteSchema = z.object({
+  /** How the site is located: city preset + coordinates (classic) or NIPOST digital postcode + pinned building. */
+  locationMethod: z.enum(LOCATION_METHODS).default("preset"),
   locationPreset: s("lagos"),
   city: s("Lagos"),
   state: s("Lagos"),
@@ -45,6 +49,25 @@ export const SiteSchema = z.object({
       optimalTiltDeg: n(0, 0, 90),
       disagreeMonths: z.array(z.number().int().min(0).max(11)).max(12).default([]),
       fetchedAt: s(),
+    })
+    .prefault({}),
+  /** NIPOST method: the building's postcode and how its coordinates were obtained and verified. */
+  nipost: z
+    .object({
+      postcode: z.string().max(20).default(""), // canonical FC-02-A09-DB-09
+      /** NIPOST Lookup L1 result for the entered postcode. */
+      validity: z.enum(["unchecked", "valid", "invalid"]).default("unchecked"),
+      lga: s(),
+      locality: s(),
+      address: s(), // recent house address (widget / L2), when known
+      source: z.enum(["", "gps", "map", "client", "manual"]).default(""),
+      accuracyM: n(0, 0, 100000), // GPS accuracy, when the location came from a device
+      /** NIPOST reverse lookup of the pinned coordinates. */
+      pinChecked: b(false),
+      pinPostcode: z.string().max(20).default(""),
+      pinDistanceM: n(0, 0, 100000),
+      pinConfidence: z.string().max(10).default(""),
+      verifiedAt: s(),
     })
     .prefault({}),
   notes: s(),
