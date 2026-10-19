@@ -2,10 +2,10 @@
 
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { LOCATIONS } from "@/lib/locations";
-import { LOCATION_SOURCE_LABELS, canonicalPostcode, distanceM, inNigeria, parsePostcode, pinMatch, round6, type LocationSource } from "@/lib/postcode";
+import { matchLga, matchState, nearestPreset } from "@/lib/locations";
+import { LOCATION_SOURCE_LABELS, canonicalPostcode, inNigeria, parsePostcode, pinMatch, round6, type LocationSource } from "@/lib/postcode";
 import type { Site } from "@/lib/schemas";
-import { currentPosition, pickWithWidget, placeCentre, reverseLookup, validatePostcode, widgetEnabled, type ReverseResult } from "../location/nipost-client";
+import { currentPosition, pickWithWidget, placeAt, placeCentre, reverseLookup, validatePostcode, widgetEnabled, type ReverseResult } from "../location/nipost-client";
 import type { LatLng } from "../location/LocationMap";
 import { useProject } from "../project/ProjectProvider";
 import { Badge, Field, NumInput, cx } from "../ui";
@@ -21,8 +21,11 @@ type Draft = LatLng & { accuracyM: number; source: Exclude<LocationSource, "">; 
 
 const EMPTY_DETAIL: Site["climateDetail"] = { method: "none", gsaPsh: [], nasaPsh: [], gsaPvoutPerDay: [], gsaAnnualPvout: 0, optimalTiltDeg: 0, disagreeMonths: [], fetchedAt: "" };
 
-function nearestPreset(lat: number, lng: number) {
-  return LOCATIONS.reduce((best, l) => (distanceM(lat, lng, l.latitude, l.longitude) < distanceM(lat, lng, best.latitude, best.longitude) ? l : best));
+/** State, LGA and town from NIPOST's names, matched to the dropdown lists. */
+function areaNames(state?: string | null, lga?: string | null): Partial<Site> {
+  const st = state ? matchState(state) || state : "";
+  if (!st) return {};
+  return { state: st, ...(lga ? { lga: matchLga(st, lga), city: lga } : {}) };
 }
 
 const fmtCoord = (v: number) => v.toFixed(6);
@@ -83,7 +86,7 @@ export function NipostLocation() {
     setCheckingCode(true);
     try {
       const r = await validatePostcode(p.formatted);
-      const names = { ...(r.stateName ? { state: r.stateName } : {}), ...(r.lgaName ? { city: r.lgaName } : {}) };
+      const names = areaNames(r.stateName, r.lgaName);
       setSite({ ...names, nipost: { ...np, postcode: r.postcode, validity: r.valid === null ? "unchecked" : r.valid ? "valid" : "invalid", lga: r.lgaName || np.lga } });
       if (!r.configured) setCodeMsg({ tone: "warn", text: "Format is correct. NIPOST checking is not set up on this server, so the postcode was not verified." });
       else if (r.valid) setCodeMsg({ tone: "good", text: `NIPOST confirms this postcode${r.lgaName ? ` · ${r.lgaName}, ${r.stateName}` : ""}. Now pin the building below.` });
@@ -108,8 +111,7 @@ export function NipostLocation() {
       const formatted = canonicalPostcode(sel.formatted || sel.postcode);
       setCode(formatted);
       setSite({
-        ...(sel.names?.state ? { state: sel.names.state } : {}),
-        ...(sel.names?.lga ? { city: sel.names.lga } : {}),
+        ...areaNames(sel.names?.state, sel.names?.lga),
         nipost: { ...np, postcode: formatted, validity: "valid", lga: sel.names?.lga || np.lga, address: sel.address || np.address },
       });
       if (sel.address && !client.address.trim()) setClient({ address: sel.address });
@@ -165,7 +167,7 @@ export function NipostLocation() {
       latitude: d.lat,
       longitude: d.lng,
       locationPreset: "custom",
-      ...(c?.stateName ? { state: c.stateName } : {}),
+      ...areaNames(c?.stateName, c?.lgaName),
       ...(c?.locality || c?.lgaName ? { city: c.locality || c.lgaName } : {}),
       peakSunHours: near.peakSunHours,
       tMin: near.tMin,
@@ -189,6 +191,11 @@ export function NipostLocation() {
         verifiedAt: new Date().toISOString(),
       },
     };
+    // NIPOST gave no state for the pin (not configured or no building): take it from the map.
+    if (!patch.state) {
+      const place = await placeAt(d.lat, d.lng).catch(() => null);
+      if (place) Object.assign(patch, { state: place.state, lga: place.lga, ...(place.locality ? { city: place.locality } : {}) });
+    }
     setSite(patch);
     if (c?.address && !client.address.trim()) setClient({ address: c.address });
     setDraft(null);

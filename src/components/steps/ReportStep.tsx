@@ -148,7 +148,7 @@ export function ReportStep() {
         <Section n={2} title="Site & design basis">
           <T
             rows={[
-              ["Location", `${p.site.city}, ${p.site.state}, ${p.site.country} (${p.site.latitude}°, ${p.site.longitude}°)`],
+              ["Location", `${[p.site.city, p.site.lga && `${p.site.lga} LGA`, p.site.state, p.site.country].filter(Boolean).join(", ")} (${p.site.latitude}°, ${p.site.longitude}°)`],
               ...(p.site.locationMethod === "nipost" && p.site.nipost.postcode ? [["NIPOST postcode", nipostLine(p.site)]] : []),
               ["Peak sun hours", `${p.site.peakSunHours} h/day (${p.site.climateSource})`],
               ...(p.site.monthlyPsh.length === 12 ? [["Monthly PSH (Jan–Dec)", p.site.monthlyPsh.map((v) => v.toFixed(1)).join(" · ")]] : []),

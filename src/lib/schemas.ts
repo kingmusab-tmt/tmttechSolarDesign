@@ -29,6 +29,8 @@ export const SiteSchema = z.object({
   locationPreset: s("lagos"),
   city: s("Lagos"),
   state: s("Lagos"),
+  /** Local government area, from the NIPOST postcode, the coordinates or the dropdown. */
+  lga: s(),
   country: s("Nigeria"),
   latitude: n(6.52, -90, 90),
   longitude: n(3.38, -180, 180),

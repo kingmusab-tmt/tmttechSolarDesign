@@ -58,6 +58,14 @@ export interface ReverseResult {
 }
 export const reverseLookup = (lat: number, lng: number) => getJson<ReverseResult>(`/api/postcode?action=reverse&lat=${lat}&lng=${lng}`);
 
+export interface PlaceResult {
+  state: string;
+  lga: string;
+  locality: string;
+}
+/** State and LGA (already matched to our lists) at a location, or null when OpenStreetMap has none. */
+export const placeAt = (lat: number, lng: number) => getJson<{ place: PlaceResult | null }>(`/api/postcode?action=place&lat=${lat}&lng=${lng}`).then((d) => d.place);
+
 export const placeCentre = (q: string) => getJson<{ centre: { lat: number; lon: number } | null }>(`/api/postcode?action=centre&q=${encodeURIComponent(q)}`).then((d) => d.centre);
 
 /* ------------------------------------------------------------------ */

@@ -1,6 +1,7 @@
 import { inNigeria, parsePostcode } from "@/lib/postcode";
 import { HttpError, handler, json } from "@/lib/server/api";
-import { geocodePlace } from "@/lib/server/geocode";
+import { matchLga, matchState } from "@/lib/locations";
+import { geocodePlace, reversePlace } from "@/lib/server/geocode";
 import { lgaName, lookupValid, nipostConfigured, reverse, stateName } from "@/lib/server/nipost";
 import { rateLimit } from "@/lib/server/rate-limit";
 
@@ -9,6 +10,7 @@ import { rateLimit } from "@/lib/server/rate-limit";
  *   ?action=validate&code=FC-02-A09-DB-09   format + NIPOST Lookup L1 + state/LGA names
  *   ?action=reverse&lat=..&lng=..           the building NIPOST finds at a pinned location
  *   ?action=centre&q=Bwari, FCT             approximate map centre for a place name
+ *   ?action=place&lat=..&lng=..             state and LGA at a location (OpenStreetMap), matched to our lists
  */
 export const GET = handler(async (req, _ctx, session) => {
   rateLimit(`postcode:${session.userId}`, 60, 60_000);
@@ -30,6 +32,16 @@ export const GET = handler(async (req, _ctx, session) => {
     if (!inNigeria(lat, lng)) throw new HttpError(400, "That location is outside Nigeria");
     if (!nipostConfigured()) return json({ configured: false });
     return json({ configured: true, ...(await reverse(lat, lng)) });
+  }
+
+  if (action === "place") {
+    const lat = Number(sp.get("lat"));
+    const lng = Number(sp.get("lng"));
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) throw new HttpError(400, "Valid coordinates are required");
+    if (!inNigeria(lat, lng)) throw new HttpError(400, "That location is outside Nigeria");
+    const p = await reversePlace(lat, lng);
+    const state = p ? matchState(p.state) : "";
+    return json({ place: state && p ? { state, lga: matchLga(state, p.lga), locality: p.locality } : null });
   }
 
   if (action === "centre") {

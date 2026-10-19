@@ -3,13 +3,13 @@
 import { STEPS } from "@/lib/steps";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { LOCATIONS } from "@/lib/locations";
+import { NIGERIAN_STATES } from "@/lib/locations";
 
 export function NewProjectForm() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [clientName, setClientName] = useState("");
-  const [locationPreset, setLocation] = useState("nipost");
+  const [state, setState] = useState("");
   const [withSample, setWithSample] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -22,7 +22,7 @@ export function NewProjectForm() {
       const res = await fetch("/api/projects", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim() || "New solar design", clientName, locationPreset, withSample }),
+        body: JSON.stringify({ name: name.trim() || "New solar design", clientName, state, withSample }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Could not create project");
@@ -48,15 +48,18 @@ export function NewProjectForm() {
         <input className="input" value={clientName} onChange={(e) => setClientName(e.target.value)} />
       </label>
       <label className="block">
-        <span className="label">Location</span>
-        <select className="input" value={locationPreset} onChange={(e) => setLocation(e.target.value)}>
-          <option value="nipost">NIPOST digital postcode: pin the exact building next</option>
-          {LOCATIONS.map((l) => (
-            <option key={l.key} value={l.key}>
-              {l.city}, {l.state} ({l.peakSunHours} PSH)
+        <span className="label">State</span>
+        <select className="input" value={state} onChange={(e) => setState(e.target.value)} required>
+          <option value="" disabled>
+            Select the site&apos;s state
+          </option>
+          {NIGERIAN_STATES.map((st) => (
+            <option key={st.name} value={st.name}>
+              {st.name === "FCT" ? "FCT (Abuja)" : st.name}
             </option>
           ))}
         </select>
+        <span className="mt-1 block text-xs text-muted">Pin the exact site next, by NIPOST digital postcode or city preset and coordinates.</span>
       </label>
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" className="h-4 w-4 accent-[var(--accent)]" checked={withSample} onChange={(e) => setWithSample(e.target.checked)} />

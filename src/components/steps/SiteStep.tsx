@@ -1,7 +1,10 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { fmt } from "@/lib/format";
-import { LOCATIONS, findLocation } from "@/lib/locations";
+import { LOCATIONS, NIGERIAN_STATES, findLocation, lgasOf } from "@/lib/locations";
+import { inNigeria } from "@/lib/postcode";
+import { placeAt } from "../location/nipost-client";
 import { Card, Field, KeyValue, NumInput, Select, TextInput, Toggle, cx } from "../ui";
 import { useProject } from "../project/ProjectProvider";
 import { ClimateCard } from "./ClimateCard";
@@ -16,9 +19,39 @@ export function SiteStep() {
   const applyPreset = (key: string) => {
     const l = findLocation(key);
     if (!l) return setSite({ locationPreset: "custom" });
-    setSite({ locationPreset: l.key, city: l.city, state: l.state, latitude: l.latitude, longitude: l.longitude, peakSunHours: l.peakSunHours, tMin: l.tMin, tMax: l.tMax, monthlyPsh: [], climateSource: "Location preset", climateDetail: { ...site.climateDetail, method: "none", gsaPsh: [], nasaPsh: [], gsaPvoutPerDay: [], gsaAnnualPvout: 0, optimalTiltDeg: 0, disagreeMonths: [], fetchedAt: "" } });
+    setSite({ locationPreset: l.key, city: l.city, state: l.state, lga: "", latitude: l.latitude, longitude: l.longitude, peakSunHours: l.peakSunHours, tMin: l.tMin, tMax: l.tMax, monthlyPsh: [], climateSource: "Location preset", climateDetail: { ...site.climateDetail, method: "none", gsaPsh: [], nasaPsh: [], gsaPvoutPerDay: [], gsaAnnualPvout: 0, optimalTiltDeg: 0, disagreeMonths: [], fetchedAt: "" } });
   };
 
+  // Preset method: fill the state and LGA from the coordinates whenever they change (preset, typed or pasted).
+  const [placeMsg, setPlaceMsg] = useState("");
+  const lastCoords = useRef({ lat: site.latitude, lng: site.longitude });
+  useEffect(() => {
+    if (site.locationMethod !== "preset") return;
+    const { lat, lng } = { lat: site.latitude, lng: site.longitude };
+    if (lastCoords.current.lat === lat && lastCoords.current.lng === lng) return;
+    lastCoords.current = { lat, lng };
+    if (!inNigeria(lat, lng)) return setPlaceMsg("");
+    let alive = true;
+    const t = setTimeout(() => {
+      setPlaceMsg("Finding the state and LGA for these coordinates…");
+      placeAt(lat, lng)
+        .then((p) => {
+          if (!alive) return;
+          if (p) setSite({ state: p.state, lga: p.lga });
+          setPlaceMsg(p ? "" : "No state or LGA found at these coordinates. Select them below.");
+        })
+        .catch(() => alive && setPlaceMsg("Could not look up the state and LGA. Select them below."));
+    }, 900);
+    return () => {
+      alive = false;
+      clearTimeout(t);
+    };
+  }, [site.latitude, site.longitude, site.locationMethod]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Names from NIPOST or the map that are not in our lists stay selectable rather than being dropped.
+  const withCurrent = (list: string[], current: string) => (current && !list.includes(current) ? [current, ...list] : list);
+  const stateOptions = [{ value: "", label: "Select state" }, ...withCurrent(NIGERIAN_STATES.map((st) => st.name), site.state).map((v) => ({ value: v, label: v === "FCT" ? "FCT (Abuja)" : v }))];
+  const lgaOptions = [{ value: "", label: site.state ? "Select LGA" : "Select the state first" }, ...withCurrent(lgasOf(site.state), site.lga).map((v) => ({ value: v, label: v }))];
 
   return (
     <div className="grid gap-6 xl:grid-cols-2">
@@ -78,11 +111,15 @@ export function SiteStep() {
               </Field>
             </>
           )}
-          <Field label={site.locationMethod === "nipost" ? "Town / locality" : "City / town"}>
-            <TextInput value={site.city} onChange={(city) => setSite({ city, locationPreset: "custom" })} />
+          <Field label="State" hint={site.locationMethod === "nipost" ? "Filled from the NIPOST postcode or pin" : "Filled from the coordinates"}>
+            <Select value={site.state} onChange={(state) => setSite({ state, lga: "" })} options={stateOptions} />
           </Field>
-          <Field label="State">
-            <TextInput value={site.state} onChange={(state) => setSite({ state })} />
+          <Field label="LGA">
+            <Select value={site.lga} onChange={(lga) => setSite({ lga })} options={lgaOptions} />
+          </Field>
+          {placeMsg && <p className="text-xs text-muted sm:col-span-2">{placeMsg}</p>}
+          <Field label={site.locationMethod === "nipost" ? "Town / locality" : "City / town"} className="sm:col-span-2">
+            <TextInput value={site.city} onChange={(city) => setSite({ city, locationPreset: "custom" })} />
           </Field>
           {site.locationMethod !== "nipost" && (
             <>
